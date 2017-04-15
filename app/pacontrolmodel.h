@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Konsulko Group
+ * Copyright (C) 2016,2017 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,8 @@
 
 #include <pulse/pulseaudio.h>
 
-#ifndef __cplusplus
-extern void add_one_control(void *ctx, int, const char *, int, int, const char *, int);
-#else
-extern "C" void add_one_control(void *ctx, int, const char *, int, int, const char *, int);
-
-#include <QAbstractListModel>
-#include <QStringList>
+#include <QtCore/QAbstractListModel>
+#include <QtCore/QList>
 
 class PaControlModel;
 
@@ -42,7 +37,7 @@ class PaControl
 		void setType(const QVariant&);
 		void setChannel(const QVariant&);
 		void setCDesc(const QVariant&);
-		void setVolume(pa_context *, const QVariant&);
+		void setVolume(PaControlModel *, const QVariant&);
 
 	private:
 		quint32 m_cindex;
@@ -78,10 +73,15 @@ class PaControlModel : public QAbstractListModel
 
 		Qt::ItemFlags flags(const QModelIndex &index) const;
 
+	public slots:
+		void addOneControl(int cindex, QString desc, int type, int channel, const char *cdesc, int volume);
+
+	signals:
+		void volumeChanged(uint32_t type, uint32_t index, uint32_t channel, uint32_t volume);
+
 	protected:
 		QHash<int, QByteArray> roleNames() const;
 	private:
 		QList<PaControl> m_controls;
 		pa_context *pa_ctx;
 };
-#endif // __cplusplus

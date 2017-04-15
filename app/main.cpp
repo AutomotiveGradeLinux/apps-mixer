@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 The Qt Company Ltd.
- * Copyright (C) 2016 Konsulko Group
+ * Copyright (C) 2016,2017 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,13 @@
  * limitations under the License.
  */
 
+#include "paclient.h"
+#include "pacontrolmodel.h"
+
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
 #include <QtCore/QStandardPaths>
+#include <QtCore/QThread>
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlApplicationEngine>
 #include <QtQml/QQmlContext>
@@ -26,7 +30,6 @@
 #include <QtQuick/qquickitem.h>
 #include <QtQuick/qquickview.h>
 
-#include "pacontrolmodel.h"
 
 #ifdef HAVE_LIBHOMESCREEN
 #include <libhomescreen.hpp>
@@ -47,10 +50,28 @@ int main(int argc, char *argv[])
 
 	QQuickStyle::setStyle("AGL");
 
+	// Fire up PA client QThread
+	QThread* pat = new QThread;
+	PaClient* client = new PaClient();
+	client->moveToThread(pat);
+	pat->start();
+
+	// Register the PA Control Model
 	qmlRegisterType<PaControlModel>("PaControlModel", 1, 0, "PaControlModel");
 
 	QQmlApplicationEngine engine;
 	engine.load(QUrl(QStringLiteral("qrc:/Mixer.qml")));
+
+	// Find the instantiated model QObject and connect the signals/slots
+	QList<QObject *> mobjs = engine.rootObjects();
+	PaControlModel *pacm = mobjs.first()->findChild<PaControlModel *>("pacm");
+	QObject::connect(client, SIGNAL(controlAdded(int, QString, int, int, const char *, int)),
+			 pacm, SLOT(addOneControl(int, QString, int, int, const char *, int)));
+	QObject::connect(pacm, SIGNAL(volumeChanged(uint32_t, uint32_t, uint32_t, uint32_t)),
+			client, SLOT(setVolume(uint32_t, uint32_t, uint32_t, uint32_t)));
+
+	// Initalize PA client
+	client->init();
 
 	return app.exec();
 }

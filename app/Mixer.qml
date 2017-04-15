@@ -53,7 +53,7 @@ ApplicationWindow {
 		anchors.top: title.bottom
 		anchors.margins: 80
 		anchors.fill: parent
-		model: PaControlModel {}
+		model: PaControlModel { objectName: "pacm" }
 		delegate: ColumnLayout {
 			width: parent.width
 			spacing: 40

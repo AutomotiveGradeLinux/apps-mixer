@@ -3,11 +3,11 @@ QT = quickcontrols2
 
 HEADERS += \
     pacontrolmodel.h \
-    pac.h
+    paclient.h
 
 SOURCES = main.cpp \
     pacontrolmodel.cpp \
-    pac.c
+    paclient.cpp
 
 CONFIG += link_pkgconfig
 PKGCONFIG += libpulse

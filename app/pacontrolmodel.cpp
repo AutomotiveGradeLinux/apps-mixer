@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Konsulko Group
+ * Copyright (C) 2016,2017 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 #include "pacontrolmodel.h"
-#include "pac.h"
 
 PaControl::PaControl(const quint32 &cindex, const QString &desc, const quint32 &type, const quint32 &channel, const QString &cdesc, const quint32 &volume)
 	: m_cindex(cindex), m_desc(desc), m_type(type), m_channel(channel), m_cdesc(cdesc), m_volume(volume)
@@ -79,18 +78,17 @@ void PaControl::setCDesc(const QVariant &cdesc)
 	m_cdesc = cdesc.toString();
 }
 
-void PaControl::setVolume(pa_context *pa_ctx, const QVariant &volume)
+void PaControl::setVolume(PaControlModel *pacm, const QVariant &volume)
 {
 	if (volume != m_volume) {
 		m_volume = volume.toUInt();
-		pac_set_volume(pa_ctx, type(), cindex(), channel(), m_volume);
+		emit pacm->volumeChanged(type(), cindex(), channel(), m_volume);
 	}
 }
 
 PaControlModel::PaControlModel(QObject *parent)
 	: QAbstractListModel(parent)
 {
-	pa_ctx = pac_init(this, "Mixer");
 }
 
 void PaControlModel::addControl(const PaControl &control)
@@ -100,11 +98,9 @@ void PaControlModel::addControl(const PaControl &control)
 	endInsertRows();
 }
 
-void add_one_control(void *ctx, int cindex, const char *desc, int type, int channel, const char *cdesc, int volume)
+void PaControlModel::addOneControl(int cindex, QString desc, int type, int channel, const char *cdesc, int volume)
 {
-	// Get the PaControlModel object from the opaque pointer context
-	PaControlModel *pacm = static_cast<PaControlModel*>(ctx);
-	pacm->addControl(PaControl(cindex, desc, type, channel, cdesc, volume));
+	addControl(PaControl(cindex, desc, type, channel, cdesc, volume));
 }
 
 int PaControlModel::rowCount(const QModelIndex & parent) const {
@@ -127,7 +123,7 @@ bool PaControlModel::setData(const QModelIndex &index, const QVariant &value, in
 	else if (role == CDescRole)
 		control.setCDesc(value);
 	else if (role == VolumeRole)
-		control.setVolume(pa_ctx, value);
+		control.setVolume(this, value);
 	emit dataChanged(index, index);
 	return true;
 }
