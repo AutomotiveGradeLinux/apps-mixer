@@ -55,16 +55,12 @@ void PaClient::setVolume(uint32_t type, uint32_t index, uint32_t channel, uint32
 {
 	pa_operation *o;
 	pa_context *c = context();
-	CState *cstate = NULL;
-
-	foreach (cstate, m_cstatelist)
-		if ((cstate->index == index) && (cstate->type == type))
-			break;
-
-	cstate->cvolume.values[channel] = volume;
+	pa_cvolume *cvolume = NULL;
 
 	if (type == C_SINK) {
-		if (!(o = pa_context_set_sink_volume_by_index(c, index, &cstate->cvolume, set_sink_volume_cb, NULL))) {
+		cvolume = m_sink_states.value(index);
+		cvolume->values[channel] = volume;
+		if (!(o = pa_context_set_sink_volume_by_index(c, index, cvolume, set_sink_volume_cb, NULL))) {
 			qWarning() << "PaClient: set sink #" << index <<
 				" channel #" << channel <<
 				" volume: " << pa_strerror(pa_context_errno(c));
@@ -72,7 +68,9 @@ void PaClient::setVolume(uint32_t type, uint32_t index, uint32_t channel, uint32
 		}
 		pa_operation_unref(o);
 	} else if (type == C_SOURCE) {
-		if (!(o = pa_context_set_source_volume_by_index(c, index, &cstate->cvolume, set_source_volume_cb, NULL))) {
+		cvolume = m_sink_states.value(index);
+		cvolume->values[channel] = volume;
+		if (!(o = pa_context_set_source_volume_by_index(c, index, cvolume, set_source_volume_cb, NULL))) {
 			qWarning() << "PaClient: set source #" << index <<
 				" channel #" << channel <<
 				" volume: " << pa_strerror(pa_context_errno(c));
@@ -215,14 +213,14 @@ void PaClient::init()
 void PaClient::addOneControlState(int type, int index, const pa_cvolume *cvolume)
 {
 	int i;
-	CState *cstate;
+	pa_cvolume *cvolume_new;
 
-	cstate = new CState;
-	cstate->type = type;
-	cstate->index = index;
-	cstate->cvolume.channels = cvolume->channels;
+	cvolume_new = new pa_cvolume;
+	cvolume_new->channels = cvolume->channels;
 	for (i = 0; i < cvolume->channels; i++)
-		cstate->cvolume.values[i] = cvolume->values[i];
-
-	m_cstatelist.append(cstate);
+		cvolume_new->values[i] = cvolume->values[i];
+	if (type == C_SINK)
+		m_sink_states.insert(index, cvolume_new);
+	else if (type == C_SOURCE)
+		m_source_states.insert(index, cvolume_new);
 }

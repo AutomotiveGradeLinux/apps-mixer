@@ -16,6 +16,7 @@
 
 #include <pulse/pulseaudio.h>
 
+#include <QtCore/QHash>
 #include <QtCore/QObject>
 
 const char * const channel_position_string[] =
@@ -85,5 +86,6 @@ class PaClient : public QObject
 		pa_threaded_mainloop *m_ml;
 		pa_mainloop_api *m_mlapi;
 		pa_context *m_ctx;
-		QList<CState *> m_cstatelist;
+		QHash<int, pa_cvolume *> m_sink_states;
+		QHash<int, pa_cvolume *> m_source_states;
 };
