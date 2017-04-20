@@ -68,7 +68,7 @@ void PaClient::setVolume(uint32_t type, uint32_t index, uint32_t channel, uint32
 		}
 		pa_operation_unref(o);
 	} else if (type == C_SOURCE) {
-		cvolume = m_sink_states.value(index);
+		cvolume = m_source_states.value(index);
 		cvolume->values[channel] = volume;
 		if (!(o = pa_context_set_source_volume_by_index(c, index, cvolume, set_source_volume_cb, NULL))) {
 			qWarning() << "PaClient: set source #" << index <<
