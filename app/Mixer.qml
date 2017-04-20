@@ -57,6 +57,10 @@ ApplicationWindow {
 		delegate: ColumnLayout {
 			width: parent.width
 			spacing: 40
+			Connections {
+				target: listView.model
+				onDataChanged: slider.value = volume
+			}
 			Loader {
 				property int modelType: type
 				property int modelCIndex: cindex
@@ -75,6 +79,7 @@ ApplicationWindow {
 					text: "0 %"
 				}
 				Slider {
+					id: slider
 					Layout.fillWidth: true
 					from: 0
 					to: 65536

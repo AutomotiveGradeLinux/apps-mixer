@@ -37,15 +37,19 @@ void PaClient::close()
 	m_init = false;
 }
 
-static void set_sink_volume_cb(pa_context *c, int success, void *data __attribute__((unused)))
+static void set_sink_volume_cb(pa_context *c, int success, void *data)
 {
+	Q_UNUSED(data);
+
 	if (!success)
 		qWarning() << "PaClient: set sink volume: " <<
 			pa_strerror(pa_context_errno(c));
 }
 
-static void set_source_volume_cb(pa_context *c, int success, void *data __attribute__((unused)))
+static void set_source_volume_cb(pa_context *c, int success, void *data)
 {
+	Q_UNUSED(data);
+
 	if (!success)
 		qWarning() << "PaClient: set source volume: " <<
 			pa_strerror(pa_context_errno(c));
@@ -112,8 +116,8 @@ void get_sink_list_cb(pa_context *c,
 		int eol,
 		void *data)
 {
-	int chan;
 	PaClient *self = reinterpret_cast<PaClient*>(data);
+	int chan;
 
 	if(eol < 0) {
 		qWarning() << "PaClient: get sink list: " <<
@@ -129,6 +133,87 @@ void get_sink_list_cb(pa_context *c,
 						 channel_position_string[i->channel_map.map[chan]],
 						 i->volume.values[chan]);
 		}
+	}
+}
+
+void get_sink_info_change_cb(pa_context *c,
+			     const pa_sink_info *i,
+			     int eol,
+			     void *data)
+{
+	Q_UNUSED(c);
+	Q_ASSERT(i);
+	Q_ASSERT(data);
+
+	if (eol) return;
+
+	for (int chan = 0; chan < i->channel_map.channels; chan++) {
+		PaClient *self = reinterpret_cast<PaClient*>(data);
+		QHash<int, pa_cvolume *> states = self->sink_states();
+		pa_cvolume *cvolume = states.value(i->index);
+		// Check each channel for volume change
+		if (cvolume->values[chan] != i->volume.values[chan]) {
+			// On change, update cache and signal
+			cvolume->values[chan] = i->volume.values[chan];
+			emit self->volumeExternallyChanged(C_SINK, i->index, chan, i->volume.values[chan]);
+		}
+	}
+}
+
+void get_source_info_change_cb(pa_context *c,
+			       const pa_source_info *i,
+			       int eol,
+			       void *data)
+{
+	Q_UNUSED(c);
+	Q_ASSERT(i);
+	Q_ASSERT(data);
+
+	if (eol) return;
+
+	for (int chan = 0; chan < i->channel_map.channels; chan++) {
+		PaClient *self = reinterpret_cast<PaClient*>(data);
+		QHash<int, pa_cvolume *> states = self->source_states();
+		pa_cvolume *cvolume = states.value(i->index);
+		// Check each channel for volume change
+		if (cvolume->values[chan] != i->volume.values[chan]) {
+			// On change, update cache and signal
+			cvolume->values[chan] = i->volume.values[chan];
+			emit self->volumeExternallyChanged(C_SOURCE, i->index, chan, i->volume.values[chan]);
+		}
+	}
+}
+
+
+void subscribe_cb(pa_context *c,
+		  pa_subscription_event_type_t type,
+		  uint32_t index,
+		  void *data)
+{
+	pa_operation *o;
+
+	if ((type & PA_SUBSCRIPTION_EVENT_TYPE_MASK) != PA_SUBSCRIPTION_EVENT_CHANGE) {
+		qWarning("PaClient: unhandled subscribe event operation");
+		return;
+	}
+
+	switch (type & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) {
+		case PA_SUBSCRIPTION_EVENT_SINK:
+			if (!(o = pa_context_get_sink_info_by_index(c, index, get_sink_info_change_cb, data))) {
+				qWarning() << "PaClient: get sink info by index: " <<
+					pa_strerror(pa_context_errno(c));
+				return;
+			}
+			break;
+		case PA_SUBSCRIPTION_EVENT_SOURCE:
+			if (!(o = pa_context_get_source_info_by_index(c, index, get_source_info_change_cb, data))) {
+				qWarning() << "PaClient: get source info by index: " <<
+					pa_strerror(pa_context_errno(c));
+				return;
+			}
+			break;
+		default:
+			qWarning("PaClient: unhandled subscribe event facility");
 	}
 }
 
@@ -152,6 +237,13 @@ void context_state_cb(pa_context *c, void *data)
 			pa_operation_unref(o);
 			if (!(o = pa_context_get_sink_info_list(c, &get_sink_list_cb, data))) {
 				qWarning() << "PaClient: get sink info list: " <<
+					pa_strerror(pa_context_errno(c));
+				return;
+			}
+			pa_operation_unref(o);
+			pa_context_set_subscribe_callback(c, subscribe_cb, data);
+			if (!(o = pa_context_subscribe(c, (pa_subscription_mask_t)(PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SOURCE), NULL, NULL))) {
+				qWarning() << "PaClient: subscribe: " <<
 					pa_strerror(pa_context_errno(c));
 				return;
 			}
@@ -212,15 +304,22 @@ void PaClient::init()
 
 void PaClient::addOneControlState(int type, int index, const pa_cvolume *cvolume)
 {
-	int i;
-	pa_cvolume *cvolume_new;
-
-	cvolume_new = new pa_cvolume;
+	pa_cvolume *cvolume_new = new pa_cvolume;
 	cvolume_new->channels = cvolume->channels;
-	for (i = 0; i < cvolume->channels; i++)
+	for (int i = 0; i < cvolume->channels; i++)
 		cvolume_new->values[i] = cvolume->values[i];
 	if (type == C_SINK)
 		m_sink_states.insert(index, cvolume_new);
 	else if (type == C_SOURCE)
 		m_source_states.insert(index, cvolume_new);
+}
+
+QHash<int, pa_cvolume *> PaClient::sink_states(void)
+{
+	return m_sink_states;
+}
+
+QHash<int, pa_cvolume *> PaClient::source_states(void)
+{
+	return m_source_states;
 }

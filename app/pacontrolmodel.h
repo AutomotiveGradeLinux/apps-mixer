@@ -75,6 +75,7 @@ class PaControlModel : public QAbstractListModel
 
 	public slots:
 		void addOneControl(int cindex, QString desc, int type, int channel, const char *cdesc, int volume);
+		void changeExternalVolume(uint32_t type, uint32_t cindex, uint32_t chan, uint32_t volume);
 
 	signals:
 		void volumeChanged(uint32_t type, uint32_t index, uint32_t channel, uint32_t volume);

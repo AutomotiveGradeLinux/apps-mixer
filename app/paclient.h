@@ -75,11 +75,15 @@ class PaClient : public QObject
 
 		void addOneControlState(int type, int index, const pa_cvolume *cvolume);
 
+		QHash<int, pa_cvolume *> sink_states();
+		QHash<int, pa_cvolume *> source_states();
+
 	public slots:
 		void setVolume(uint32_t type, uint32_t index, uint32_t channel, uint32_t volume);
 
 	signals:
 		void controlAdded(int cindex, QString desc, int type, int channel, const char *cdesc, int volume);
+		void volumeExternallyChanged(uint32_t type, uint32_t cindex, uint32_t channel, uint32_t volume);
 
 	private:
 		bool m_init;
@@ -88,4 +92,6 @@ class PaClient : public QObject
 		pa_context *m_ctx;
 		QHash<int, pa_cvolume *> m_sink_states;
 		QHash<int, pa_cvolume *> m_source_states;
+
+	public slots:
 };

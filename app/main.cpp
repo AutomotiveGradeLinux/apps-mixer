@@ -67,6 +67,8 @@ int main(int argc, char *argv[])
 	PaControlModel *pacm = mobjs.first()->findChild<PaControlModel *>("pacm");
 	QObject::connect(client, SIGNAL(controlAdded(int, QString, int, int, const char *, int)),
 			 pacm, SLOT(addOneControl(int, QString, int, int, const char *, int)));
+	QObject::connect(client, SIGNAL(volumeExternallyChanged(uint32_t, uint32_t, uint32_t, uint32_t)),
+			 pacm, SLOT(changeExternalVolume(uint32_t, uint32_t, uint32_t, uint32_t)));
 	QObject::connect(pacm, SIGNAL(volumeChanged(uint32_t, uint32_t, uint32_t, uint32_t)),
 			client, SLOT(setVolume(uint32_t, uint32_t, uint32_t, uint32_t)));
 

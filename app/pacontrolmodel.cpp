@@ -82,7 +82,8 @@ void PaControl::setVolume(PaControlModel *pacm, const QVariant &volume)
 {
 	if (volume != m_volume) {
 		m_volume = volume.toUInt();
-		emit pacm->volumeChanged(type(), cindex(), channel(), m_volume);
+		if (pacm)
+			emit pacm->volumeChanged(type(), cindex(), channel(), m_volume);
 	}
 }
 
@@ -101,6 +102,26 @@ void PaControlModel::addControl(const PaControl &control)
 void PaControlModel::addOneControl(int cindex, QString desc, int type, int channel, const char *cdesc, int volume)
 {
 	addControl(PaControl(cindex, desc, type, channel, cdesc, volume));
+}
+
+void PaControlModel::changeExternalVolume(uint32_t type, uint32_t cindex, uint32_t channel, uint32_t volume)
+{
+	QList<PaControl>::iterator i;
+	int row;
+
+	for (i = m_controls.begin(), row = 0; i < m_controls.end(); ++i, ++row) {
+		if ((i->type() == type) &&
+		    (i->cindex() == cindex) &&
+		    (i->channel() == channel)) {
+			break;
+		}
+	}
+
+	i->setVolume(NULL, QVariant(volume));
+	QModelIndex qmindex = index(row);
+	QVector<int> roles;
+	roles.push_back(VolumeRole);
+	emit dataChanged(qmindex, qmindex, roles);
 }
 
 int PaControlModel::rowCount(const QModelIndex & parent) const {
@@ -124,7 +145,9 @@ bool PaControlModel::setData(const QModelIndex &index, const QVariant &value, in
 		control.setCDesc(value);
 	else if (role == VolumeRole)
 		control.setVolume(this, value);
-	emit dataChanged(index, index);
+	QVector<int> roles;
+	roles.push_back(role);
+	emit dataChanged(index, index, roles);
 	return true;
 }
 
