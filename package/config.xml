@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns="http://www.w3.org/ns/widgets" id="mixer" version="0.1">
-  <name>MediaPlayer</name>
+  <name>Mixer</name>
   <icon src="icon.svg"/>
   <content src="bin/mixer" type="application/x-executable"/>
   <description>Simple PulseAudio mixer app</description>
