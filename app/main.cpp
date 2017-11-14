@@ -19,36 +19,37 @@
 #include "pacontrolmodel.h"
 
 #include <QtCore/QDebug>
+#include <QtCore/QCommandLineParser>
+#include <QtCore/QUrlQuery>
 #include <QtCore/QDir>
 #include <QtCore/QStandardPaths>
 #include <QtCore/QThread>
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlApplicationEngine>
 #include <QtQml/QQmlContext>
-#include <QtQml/qqml.h>
 #include <QtQuickControls2/QQuickStyle>
+#include <QtQml/qqml.h>
 #include <QtQuick/qquickitem.h>
 #include <QtQuick/qquickview.h>
-
-
-#ifdef HAVE_LIBHOMESCREEN
+#include <QQuickWindow>
 #include <libhomescreen.hpp>
-#endif
+#include <qlibwindowmanager.h>
 
 int main(int argc, char *argv[])
 {
-#ifdef HAVE_LIBHOMESCREEN
-	LibHomeScreen libHomeScreen;
-
-	if (!libHomeScreen.renderAppToAreaAllowed(0, 1)) {
-		qWarning() << "renderAppToAreaAllowed is denied";
-		return -1;
-	}
-#endif
+	QString myname = QString("Mixer");
 
 	QGuiApplication app(argc, argv);
 
 	QQuickStyle::setStyle("AGL");
+
+	QCommandLineParser parser;
+	parser.addPositionalArgument("port", app.translate("main", "port for binding"));
+	parser.addPositionalArgument("secret", app.translate("main", "secret for binding"));
+	parser.addHelpOption();
+	parser.addVersionOption();
+	parser.process(app);
+	QStringList positionalArguments = parser.positionalArguments();
 
 	// Fire up PA client QThread
 	QThread* pat = new QThread;
@@ -60,20 +61,72 @@ int main(int argc, char *argv[])
 	qmlRegisterType<PaControlModel>("PaControlModel", 1, 0, "PaControlModel");
 
 	QQmlApplicationEngine engine;
-	engine.load(QUrl(QStringLiteral("qrc:/Mixer.qml")));
+	if (positionalArguments.length() == 2) {
+		int port = positionalArguments.takeFirst().toInt();
+		QString secret = positionalArguments.takeFirst();
+		QUrl bindingAddress;
+		bindingAddress.setScheme(QStringLiteral("ws"));
+		bindingAddress.setHost(QStringLiteral("localhost"));
+		bindingAddress.setPort(port);
+		bindingAddress.setPath(QStringLiteral("/api"));
+		QUrlQuery query;
+		query.addQueryItem(QStringLiteral("token"), secret);
+		bindingAddress.setQuery(query);
+		QQmlContext *context = engine.rootContext();
+		context->setContextProperty(QStringLiteral("bindingAddress"), bindingAddress);
 
-	// Find the instantiated model QObject and connect the signals/slots
-	QList<QObject *> mobjs = engine.rootObjects();
-	PaControlModel *pacm = mobjs.first()->findChild<PaControlModel *>("pacm");
-	QObject::connect(client, SIGNAL(controlAdded(int, QString, int, int, const char *, int)),
-			 pacm, SLOT(addOneControl(int, QString, int, int, const char *, int)));
-	QObject::connect(client, SIGNAL(volumeExternallyChanged(uint32_t, uint32_t, uint32_t, uint32_t)),
-			 pacm, SLOT(changeExternalVolume(uint32_t, uint32_t, uint32_t, uint32_t)));
-	QObject::connect(pacm, SIGNAL(volumeChanged(uint32_t, uint32_t, uint32_t, uint32_t)),
-			client, SLOT(setVolume(uint32_t, uint32_t, uint32_t, uint32_t)));
+		std::string token = secret.toStdString();
+		LibHomeScreen* hs = new LibHomeScreen();
+		QLibWindowmanager* qwm = new QLibWindowmanager();
 
-	// Initalize PA client
-	client->init();
+		// WindowManager
+		if(qwm->init(port,secret) != 0){
+			exit(EXIT_FAILURE);
+		}
+		// Request a surface as described in layers.json windowmanager’s file
+		if (qwm->requestSurface(myname) != 0) {
+			exit(EXIT_FAILURE);
+		}
+	        // Create an event callbnewack against an event type. Here a lambda is called when SyncDraw event occurs
+        	qwm->set_event_handler(QLibWindowmanager::Event_SyncDraw, [qwm, myname](json_object *object) {
+				fprintf(stderr, "Surface got syncDraw!\n");
+				qwm->endDraw(myname);
+			});
 
+		// HomeScreen
+		hs->init(port, token.c_str());
+		// Set the event handler for Event_TapShortcut which will activate the surface for windowmanager
+		hs->set_event_handler(LibHomeScreen::Event_TapShortcut, [qwm, myname](json_object *object){
+			json_object *appnameJ = nullptr;
+			if(json_object_object_get_ex(object, "application_name", &appnameJ))
+			{
+				const char *appname = json_object_get_string(appnameJ);
+				if(myname == appname)
+				{
+					qDebug("Surface %s got tapShortcut\n", appname);
+					qwm->activateSurface(myname);
+				}
+			}
+		});
+
+		engine.load(QUrl(QStringLiteral("qrc:/Mixer.qml")));
+
+		// Find the instantiated model QObject and connect the signals/slots
+		QList<QObject *> mobjs = engine.rootObjects();
+
+		QQuickWindow *window = qobject_cast<QQuickWindow *>(mobjs.first());
+		QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateSurface()));
+
+		PaControlModel *pacm = mobjs.first()->findChild<PaControlModel *>("pacm");
+		QObject::connect(client, SIGNAL(controlAdded(int, QString, int, int, const char *, int)),
+				 pacm, SLOT(addOneControl(int, QString, int, int, const char *, int)));
+		QObject::connect(client, SIGNAL(volumeExternallyChanged(uint32_t, uint32_t, uint32_t, uint32_t)),
+				 pacm, SLOT(changeExternalVolume(uint32_t, uint32_t, uint32_t, uint32_t)));
+		QObject::connect(pacm, SIGNAL(volumeChanged(uint32_t, uint32_t, uint32_t, uint32_t)),
+				 client, SLOT(setVolume(uint32_t, uint32_t, uint32_t, uint32_t)));
+
+		// Initalize PA client
+		client->init();
+	}
 	return app.exec();
 }

@@ -10,7 +10,7 @@ SOURCES = main.cpp \
     paclient.cpp
 
 CONFIG += link_pkgconfig
-PKGCONFIG += libpulse
+PKGCONFIG += libhomescreen qlibwindowmanager libpulse
 
 RESOURCES += \
     Mixer.qrc
