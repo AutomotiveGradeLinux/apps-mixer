@@ -82,7 +82,7 @@ class PaClient : public QObject
 		void setVolume(uint32_t type, uint32_t index, uint32_t channel, uint32_t volume);
 
 	signals:
-		void controlAdded(int cindex, QString desc, int type, int channel, const char *cdesc, int volume);
+		void controlAdded(int cindex, QString name, QString desc, int type, int channel, const char *cdesc, int volume);
 		void volumeExternallyChanged(uint32_t type, uint32_t cindex, uint32_t channel, uint32_t volume);
 
 	private:

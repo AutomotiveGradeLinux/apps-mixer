@@ -24,15 +24,17 @@ class PaControlModel;
 class PaControl
 {
 	public:
-		PaControl(const quint32 &index, const QString &desc, const quint32 &type, const quint32 &channel, const QString &cdesc, const quint32 &volume);
+		PaControl(const quint32 &index, const QString &name, const QString &desc, const quint32 &type, const quint32 &channel, const QString &cdesc, const quint32 &volume);
 
 		quint32 cindex() const;
+		QString name() const;
 		QString desc() const;
 		quint32 type() const;
 		quint32 channel() const;
 		QString cdesc() const;
 		quint32 volume() const;
 		void setCIndex(const QVariant&);
+		void setName(const QVariant&);
 		void setDesc(const QVariant&);
 		void setType(const QVariant&);
 		void setChannel(const QVariant&);
@@ -41,6 +43,7 @@ class PaControl
 
 	private:
 		quint32 m_cindex;
+		QString m_name;
 		QString m_desc;
 		quint32 m_type;
 		quint32 m_channel;
@@ -54,6 +57,7 @@ class PaControlModel : public QAbstractListModel
 	public:
 		enum PaControlRoles {
 			CIndexRole = Qt::UserRole + 1,
+			NameRole,
 			DescRole,
 			TypeRole,
 			ChannelRole,
@@ -74,7 +78,7 @@ class PaControlModel : public QAbstractListModel
 		Qt::ItemFlags flags(const QModelIndex &index) const;
 
 	public slots:
-		void addOneControl(int cindex, QString desc, int type, int channel, const char *cdesc, int volume);
+		void addOneControl(int cindex, QString name, QString desc, int type, int channel, const char *cdesc, int volume);
 		void changeExternalVolume(uint32_t type, uint32_t cindex, uint32_t chan, uint32_t volume);
 
 	signals:
