@@ -104,8 +104,12 @@ void get_source_list_cb(pa_context *c,
 	if (!eol) {
 		self->addOneControlState(C_SOURCE, i->index, &i->volume);
 		for (chan = 0; chan < i->channel_map.channels; chan++) {
-			emit self->controlAdded(i->index, QString(i->description), C_SOURCE, chan,
-						channel_position_string[i->channel_map.map[chan]],
+			// NOTE: hide input control
+			if (QString(i->name).endsWith("monitor"))
+				continue;
+
+			emit self->controlAdded(i->index, QString(i->name), QString(i->description),
+						C_SOURCE, chan, channel_position_string[i->channel_map.map[chan]],
 						i->volume.values[chan]);
 		}
 	}
@@ -129,9 +133,9 @@ void get_sink_list_cb(pa_context *c,
 	if(!eol) {
 		self->addOneControlState(C_SINK, i->index, &i->volume);
 		for (chan = 0; chan < i->channel_map.channels; chan++) {
-			emit self->controlAdded(i->index, QString(i->description), C_SINK, chan,
-						 channel_position_string[i->channel_map.map[chan]],
-						 i->volume.values[chan]);
+			emit self->controlAdded(i->index, QString(i->name), QString(i->description),
+						C_SINK, chan, channel_position_string[i->channel_map.map[chan]],
+						i->volume.values[chan]);
 		}
 	}
 }

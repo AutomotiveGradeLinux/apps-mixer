@@ -16,14 +16,21 @@
 
 #include "pacontrolmodel.h"
 
-PaControl::PaControl(const quint32 &cindex, const QString &desc, const quint32 &type, const quint32 &channel, const QString &cdesc, const quint32 &volume)
-	: m_cindex(cindex), m_desc(desc), m_type(type), m_channel(channel), m_cdesc(cdesc), m_volume(volume)
+PaControl::PaControl(const quint32 &cindex, const QString &name, const QString &desc, const quint32 &type, const quint32 &channel, const QString &cdesc, const quint32 &volume)
+	: m_cindex(cindex), m_name(name), m_desc(desc), m_type(type), m_channel(channel), m_cdesc(cdesc), m_volume(volume)
 {
 }
 
 quint32 PaControl::cindex() const
 {
 	return m_cindex;
+}
+
+QString PaControl::name() const
+{
+	QStringList list = m_name.split(".");
+
+	return list.at(1);
 }
 
 QString PaControl::desc() const
@@ -56,6 +63,11 @@ quint32 PaControl::volume() const
 void PaControl::setCIndex(const QVariant &cindex)
 {
 	m_cindex = cindex.toUInt();
+}
+
+void PaControl::setName(const QVariant &name)
+{
+	m_name = name.toString();
 }
 
 void PaControl::setDesc(const QVariant &desc)
@@ -99,9 +111,9 @@ void PaControlModel::addControl(const PaControl &control)
 	endInsertRows();
 }
 
-void PaControlModel::addOneControl(int cindex, QString desc, int type, int channel, const char *cdesc, int volume)
+void PaControlModel::addOneControl(int cindex, QString name, QString desc, int type, int channel, const char *cdesc, int volume)
 {
-	addControl(PaControl(cindex, desc, type, channel, cdesc, volume));
+	addControl(PaControl(cindex, name, desc, type, channel, cdesc, volume));
 }
 
 void PaControlModel::changeExternalVolume(uint32_t type, uint32_t cindex, uint32_t channel, uint32_t volume)
@@ -135,6 +147,8 @@ bool PaControlModel::setData(const QModelIndex &index, const QVariant &value, in
 	PaControl &control = m_controls[index.row()];
 	if (role == CIndexRole)
 		control.setCIndex(value);
+	else if (role == NameRole)
+		control.setName(value);
 	else if (role == DescRole)
 		control.setDesc(value);
 	else if (role == TypeRole)
@@ -158,6 +172,8 @@ QVariant PaControlModel::data(const QModelIndex & index, int role) const {
 	const PaControl &control = m_controls[index.row()];
 	if (role == CIndexRole)
 		return control.cindex();
+	else if (role == NameRole)
+		return control.name();
 	else if (role == DescRole)
 		return control.desc();
 	else if (role == TypeRole)
@@ -182,6 +198,7 @@ Qt::ItemFlags PaControlModel::flags(const QModelIndex &index) const
 QHash<int, QByteArray> PaControlModel::roleNames() const {
 	QHash<int, QByteArray> roles;
 	roles[CIndexRole] = "cindex";
+	roles[NameRole] = "name";
 	roles[DescRole] = "desc";
 	roles[TypeRole] = "type";
 	roles[ChannelRole] = "channel";

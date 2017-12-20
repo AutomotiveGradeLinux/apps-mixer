@@ -64,7 +64,7 @@ ApplicationWindow {
 			Loader {
 				property int modelType: type
 				property int modelCIndex: cindex
-				property string modelDesc: desc
+				property string modelDesc: name
 				sourceComponent: (channel == 0) ? ctldesc : empty
 			}
 			RowLayout {
