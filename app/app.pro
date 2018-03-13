@@ -1,13 +1,15 @@
 TARGET = mixer
-QT = quickcontrols2
+QT = quickcontrols2 websockets core
 
 HEADERS += \
-    pacontrolmodel.h \
-    paclient.h
+    mixer.h \
+    qafbwsmsg.h \
+    qafbwsclient.h
 
 SOURCES = main.cpp \
-    pacontrolmodel.cpp \
-    paclient.cpp
+    mixer.cpp \
+    qafbwsclient.cpp \
+    qafbwsmsg.cpp
 
 CONFIG += link_pkgconfig
 PKGCONFIG += libhomescreen qlibwindowmanager libpulse
