@@ -47,6 +47,7 @@ target_link_libraries(mixer
 	homescreen
 	qtWindowmanagerWrapper
 	json-c
+	afb-helpers
 )
 
 #add_custom_command(TARGET ${TARGET_NAME}
