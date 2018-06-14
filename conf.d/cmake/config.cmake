@@ -32,42 +32,6 @@ set(PROJECT_LANGUAGES "C")
 # relative to the root project directory
 set(PROJECT_APP_TEMPLATES_DIR "conf.d/app-templates")
 
-option(ENABLE_HAL_ENSONIQ		"Enable the Ensoniqs HAL"		OFF)
-option(ENABLE_HAL_JABRA			"Enable the Jabra's HAL"		OFF)
-option(ENABLE_HAL_INTEL_MINNOW	"Enable the Intel Minnow's HAL" OFF)
-option(ENABLE_HAL_INTEL_PC		"Enable the Intel PC's HAL"		OFF)
-option(ENABLE_HAL_RCAR_M3		"Enable the RCar-M3's HAL"		OFF)
-option(ENABLE_HAL_USB_DEVICE	"Enable the USB Device's HAL"	OFF)
-
-set (ENABLED_HALS "")
-
-if (ENABLE_HAL_ENSONIQ)
-	set(ENABLED_HALS "${ENABLED_HALS}    <param name=\"ensoniq\" value=\"ws\" />\n")
-endif()
-
-if (ENABLE_HAL_JABRA)
-	set(ENABLED_HALS "${ENABLED_HALS}    <param name=\"usb-jabra\" value=\"ws\" />\n")
-endif()
-
-if (ENABLE_HAL_INTEL_MINNOW)
-	set(ENABLED_HALS "${ENABLED_HALS}    <param name=\"intel-minnow\" value=\"ws\" />\n")
-endif()
-
-if (ENABLE_HAL_INTEL_PC)
-	set(ENABLED_HALS "${ENABLED_HALS}    <param name=\"intel-pc\" value=\"ws\" />\n")
-endif()
-
-if (ENABLE_HAL_RCAR_M3)
-	set(ENABLED_HALS "${ENABLED_HALS}    <param name=\"rsnddai0ak4613h\" value=\"ws\" />\n")
-endif()
-
-if (ENABLE_HAL_USB_DEVICE)
-	set(ENABLED_HALS "${ENABLED_HALS}    <param name=\"usb-audio\" value=\"ws\" />\n")
-endif()
-
-message(STATUS "ENABLED_HALS:\n${ENABLED_HALS}")
-
-
 # Where are stored your external libraries for your project. This is 3rd party library that you don't maintain
 # but used and must be built and linked.
 # set(PROJECT_LIBDIR "libs")
