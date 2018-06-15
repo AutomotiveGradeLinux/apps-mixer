@@ -23,104 +23,13 @@
 
 Mixer::Mixer(QObject* parent)
     : QObject(parent)
-    , m_masterVolume{0}
-    , m_pcmVolume{0}
-    , m_microphoneVolume{0}
 {
     connect(&m_client, SIGNAL(connected()), this, SLOT(onClientConnected()));
 }
 
-QVariantList Mixer::hals() const
+QStringList Mixer::roles() const
 {
-    return m_hallist;
-}
-
-int Mixer::masterVolume() const
-{
-    return m_masterVolume;
-}
-
-int Mixer::pcmVolume() const
-{
-    return m_pcmVolume;
-}
-
-int Mixer::microphoneVolume() const
-{
-    return m_microphoneVolume;
-}
-
-void Mixer::setMasterVolume(int v)
-{
-    qDebug() << "Mixer::setMasterVolume(" << v << ")";
-    if (v != m_masterVolume)
-    {
-        m_masterVolumePending = v;
-        QJsonObject arg;
-        arg["label"] = "Master_Playback_Volume";
-        arg["val"] = static_cast<int>(v);
-        m_setMasterVolume = m_client.call(m_activeHal, "ctlset", arg);
-        connect(m_setMasterVolume.data(), SIGNAL(closed()), this, SLOT(onSetMasterVolume()));
-    }
-}
-
-void Mixer::setPcmVolume(int v)
-{
-    qDebug() << "Mixer::setPcmVolume(" << v << ")";
-    if (v != m_pcmVolume)
-    {
-        m_pcmVolumePending = v;
-        QJsonObject arg;
-        arg["label"] = "PCM_Playback_Volume";
-        arg["val"] = static_cast<int>(v);
-        m_setPcmVolume = m_client.call(m_activeHal, "ctlset", arg);
-        connect(m_setPcmVolume.data(), SIGNAL(closed()), this, SLOT(onSetPcmVolume()));
-    }
-}
-
-void Mixer::setMicrophoneVolume(int v)
-{
-    qDebug() << "Mixer::setMicrophoneVolume(" << v << ")";
-    if (v != m_microphoneVolume)
-    {
-        m_microphoneVolumePending = v;
-        QJsonObject arg;
-        arg["label"] = "Capture_Volume";
-        arg["val"] = static_cast<int>(v);
-        m_setMicrophoneVolume = m_client.call(m_activeHal, "ctlset", arg);
-        connect(m_setMicrophoneVolume.data(), SIGNAL(closed()), this, SLOT(onSetMicrophoneVolume()));
-    }
-}
-
-QString Mixer::activeHal() const
-{
-    return m_activeHal;
-}
-
-void Mixer::setActiveHal(QString h)
-{
-    if (h != m_activeHal)
-    {
-        m_activeHal = h;
-        qDebug() << "Mixer::setActiveHal: " << h;
-        // Get volumes for this card
-
-        QJsonObject arg;
-
-        arg["label"] = "Master_Playback_Volume";
-        m_getMasterVolume = m_client.call(m_activeHal, "ctlget", arg);
-        connect(m_getMasterVolume.data(), SIGNAL(closed()), this, SLOT(onGetMasterVolume()));
-
-        arg["label"] = "PCM_Playback_Volume";
-        m_getPcmVolume = m_client.call(m_activeHal, "ctlget", arg);
-        connect(m_getPcmVolume.data(), SIGNAL(closed()), this, SLOT(onGetPcmVolume()));
-
-        arg["label"] = "Capture_Volume";
-        m_getMicrophoneVolume = m_client.call(m_activeHal, "ctlget", arg);
-        connect(m_getMicrophoneVolume.data(), SIGNAL(closed()), this, SLOT(onGetMicrophoneVolume()));
-
-        emit activeHalChanged();
-    }
+    return m_roles;
 }
 
 void Mixer::open(const QUrl &url)
@@ -131,97 +40,52 @@ void Mixer::open(const QUrl &url)
 void Mixer::onClientConnected()
 {
     // Call HAL to populate list
-    m_alsacoreHallist = m_client.call("alsacore", "hallist");
-    connect(m_alsacoreHallist.data(), SIGNAL(closed()), this, SLOT(onHalListClosed()));
-}
-
-void Mixer::onHalListClosed()
-{
-    qDebug() << "Mixer::onHalListClosed";
-    if(m_alsacoreHallist->messageType() == AfMsgType::RetOk)
-    {
-        m_hallist.clear();
-
-        QJsonArray cards = m_alsacoreHallist->value().toObject()["response"].toArray();
-        qDebug() << "Mixer::onHalListClosed - founds: " << cards;
-        foreach (const QJsonValue& card, cards)
+    m_client.call("ahl-4a", "get_roles", QJsonValue(), [this](bool r, const QJsonValue& val) {
+        if (r)
         {
-            QJsonObject c = card.toObject();
-            QVariant v(c["api"].toString());
-            m_hallist.append(v);
-            qDebug() << "Mixer::onHalListClosed - added this HAL: " << v;
+            m_roles.clear();
+            //BUG: should be able to add this, but not handled right now: m_roles.append("playback");
+            QJsonArray cards = val.toObject()["response"].toArray();
+            foreach (const QJsonValue& card, cards)
+            {
+                m_roles.append(card.toString());
+                qDebug() << "Mixer::onClientConnected - added this HAL: " << card.toString();
+            }
+            emit rolesChanged();
         }
-
-        m_alsacoreHallist.clear();
-
-        setActiveHal(m_hallist[0].toString());
-
-        emit halsChanged();
-    }
+    });
 }
 
-void Mixer::onGetMasterVolume()
+void Mixer::setVolume(const QString& name, int value)
 {
-    qDebug() << "Mixer::onGetMasterVolume()";
-    disconnect(m_getMasterVolume.data(), SIGNAL(closed()), this, SLOT(onGetMasterVolume()));
-    if (m_getMasterVolume->messageType() == AfMsgType::RetOk && m_getMasterVolume->value().isObject())
-    {
-        setMasterVolume(m_getMasterVolume->value().toObject()["response"].toObject()["val"].toArray()[0].toInt());
-    }
+    QJsonObject arg;
+    arg.insert("action", "volume");
+    arg.insert("value", QJsonValue(value));
+    m_client.call("ahl-4a", name, arg, [this, name](bool r, const QJsonValue& v) {
+        if (r && v.isObject())
+        {
+			// TODO: Success, update the slider
+        }
+        else
+        {
+			// TODO: Failed, reset the slider to previous value
+        }
+    });
 }
 
-void Mixer::onGetPcmVolume()
+void Mixer::getVolume(const QString& name)
 {
-    qDebug() << "Mixer::onGetPcmVolume()";
-    disconnect(m_getPcmVolume.data(), SIGNAL(closed()), this, SLOT(onGetPcmVolume()));
-    if (m_getPcmVolume->messageType() == AfMsgType::RetOk && m_getPcmVolume->value().isObject())
-    {
-        setPcmVolume(m_getPcmVolume->value().toObject()["response"].toObject()["val"].toArray()[0].toInt());
-    }
+    QJsonObject arg;
+    arg.insert("action", "volume");
+    arg.insert("value", QJsonValue("+0")); // FIXME: Hack to get volume: ask for a relative change with a delta of zero
+    m_client.call("ahl-4a", name, arg, [this, name](bool r, const QJsonValue& v) {
+        if (r && v.isObject())
+        {
+			// TODO: Success, update the slider
+        }
+        else
+        {
+			// TODO: Failed, what to do ?
+        }
+    });
 }
-
-void Mixer::onGetMicrophoneVolume()
-{
-    qDebug() << "Mixer::onGetMicrophoneVolume()";
-    disconnect(m_getMicrophoneVolume.data(), SIGNAL(closed()), this, SLOT(onGetMicrophoneVolume()));
-    if (m_getMicrophoneVolume->messageType() == AfMsgType::RetOk && m_getMicrophoneVolume->value().isObject())
-    {
-        setMicrophoneVolume(m_getMicrophoneVolume->value().toObject()["response"].toObject()["val"].toArray()[0].toInt());
-    }
-}
-
-void Mixer::onSetMasterVolume()
-{
-    qDebug() << "Mixer::onSetMasterVolume()";
-    disconnect(m_setMasterVolume.data(), SIGNAL(closed()), this, SLOT(onSetMasterVolume()));
-    if (m_setMasterVolume->messageType() == AfMsgType::RetOk && m_setMasterVolume->value().isObject())
-    {
-        m_masterVolume = m_masterVolumePending;
-        emit masterVolumeChanged();
-    }
-}
-
-void Mixer::onSetPcmVolume()
-{
-    qDebug() << "Mixer::onSetPcmVolume()";
-    disconnect(m_setPcmVolume.data(), SIGNAL(closed()), this, SLOT(onSetPcmVolume()));
-    if (m_setPcmVolume->messageType() == AfMsgType::RetOk && m_setPcmVolume->value().isObject())
-    {
-        m_pcmVolume = m_pcmVolumePending;
-        emit pcmVolumeChanged();
-    }
-}
-
-void Mixer::onSetMicrophoneVolume()
-{
-    qDebug() << "Mixer::onSetMicrophoneVolume()";
-    disconnect(m_setMicrophoneVolume.data(), SIGNAL(closed()), this, SLOT(onSetMicrophoneVolume()));
-    if (m_setMicrophoneVolume->messageType() == AfMsgType::RetOk && m_setMicrophoneVolume->value().isObject())
-    {
-        m_microphoneVolume = m_microphoneVolumePending;
-        qDebug() << "Mixer::onSetMicrophoneVolume() - ";
-        emit microphoneVolumeChanged();
-    }
-}
-
-

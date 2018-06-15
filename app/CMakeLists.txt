@@ -20,16 +20,15 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_CXX_STANDARD 14)
 
-find_package(Qt5QuickControls2)
-find_package(Qt5WebSockets)
+find_package(Qt5 COMPONENTS Core Gui QuickControls2 WebSockets QuickWidgets REQUIRED)
+qt5_add_resources(RESOURCES Mixer.qrc)
 
 PROJECT_TARGET_ADD(mixer)
 
 add_executable(mixer
 	main.cpp
 	mixer.cpp
-	qafbwsclient.cpp
-	qafbwsmsg.cpp
+	${RESOURCES}
 )
 
 set_target_properties(mixer PROPERTIES

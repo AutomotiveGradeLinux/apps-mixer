@@ -68,9 +68,8 @@ set (PKG_REQUIRED_LIST
 	json-c
 	libsystemd>=222
 	afb-daemon
-	libmicrohttpd>=0.9.55
-	libhomescreen
-	qlibwindowmanager
+	#libhomescreen
+	# qlibwindowmanager
 )
 
 # Prefix path where will be installed the files
