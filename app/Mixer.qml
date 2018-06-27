@@ -14,85 +14,94 @@
  * limitations under the License.
  */
 
+// BUG: ValueChanged event is raised by sliders when you are moving the caret, should be raised only when you release it.
+// TODO: Call mixer.setVolume(sliderName, Value) on value change
+// TODO: Call mixer.getVolume(sliderName) on load
+
 import QtQuick 2.6
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.0
 import AGL.Demo.Controls 1.0
-import PaControlModel 1.0
+import Mixer 1.0
 
 ApplicationWindow {
-	id: root
+    id: root
 
-	Label { 
-		id: title
-		font.pixelSize: 48
-		text: "Mixer"
-		anchors.horizontalCenter: parent.horizontalCenter
-	}
+    Mixer {
+        id: mixer
+        Component.objectName: {
+            mixer.open(bindingAddress)
+        }
+        onRolesChanged: {
+            // Remove existing sliders
+            for(var i = sliders.children.length; i > 0 ; --i) {
+                console.log("destroying: " + i)
+                sliders.children[i-1].destroy()
+            }
 
-	Component {
-		id: ctldesc
-		Label {
-			font.pixelSize: 32
-			width: listView.width
-			wrapMode: Text.WordWrap
-			property var typeString: {modelType ? "Output" : "Input"}
-			text: "[" + typeString + " #" + modelCIndex + "]: " + modelDesc
-		}
-	}
+            // Add slider for each role
+            for(var j = 0; j < mixer.roles.length; ++j) {
+                addSlider(mixer.roles[j])
+            }
+        }
 
-	Component {
-		id: empty
-		Item {
-		}
-	}
+        function addSlider(name) {
+            Qt.createQmlObject("
+import QtQuick.Layouts 1.1
+import QtQuick.Controls 2.0
+RowLayout {
+    property int value
+    id: slider_" + name + "
+            Layout.minimumHeight: 75
+            Label {
+                font.pixelSize: 24
+                text: \"" + name+ "\"
+                Layout.minimumWidth: 150
+            }
+            Label {
+                id: slider_" + name + "_textvalue
+                font.pixelSize: 24
+                text: \"0 %\"
+            }
+            Slider {
+                id: slider_" + name + "_slider
+                Layout.fillWidth: true
+                from: 0
+                to: 100
+                stepSize: 1
+                snapMode: Slider.SnapOnRelease
+                onValueChanged: {
+                    slider_" + name + "_textvalue.text = value + \" %\"
+                    mixer.setVolume(\"" + name + "\", value)
+                }
+				Component.objectName: {
+                    mixer.getVolume(\"" + name + "\")
+                }
+            }
+        }", sliders, "volumeslider")
+        }
 
-	ListView {
-		id: listView
-		anchors.left: parent.left
-		anchors.top: title.bottom
-		anchors.margins: 80
-		anchors.fill: parent
-		model: PaControlModel { objectName: "pacm" }
-		delegate: ColumnLayout {
-			width: parent.width
-			spacing: 40
-			Connections {
-				target: listView.model
-				onDataChanged: slider.value = volume
-			}
-			Loader {
-				property int modelType: type
-				property int modelCIndex: cindex
-				property string modelDesc: name
-				sourceComponent: (channel == 0) ? ctldesc : empty
-			}
-			RowLayout {
-				Layout.minimumHeight: 75
-				Label {
-					font.pixelSize: 24
-					text: cdesc
-					Layout.minimumWidth: 150
-				}
-				Label {
-					font.pixelSize: 24
-					text: "0 %"
-				}
-				Slider {
-					id: slider
-					Layout.fillWidth: true
-					from: 0
-					to: 65536
-					stepSize: 256
-					snapMode: Slider.SnapOnRelease
-					onValueChanged: volume = value
-					Component.onCompleted: value = volume
-				}
-				Label {
-					font.pixelSize: 24
-					text: "100 %"
-				}
-			}
-		}
-	}
+        function deleteChilds(item) {
+            for(var i = item.children.length; i > 0 ; i--) {
+                deleteChilds(item.children[i-1])
+            }
+            item.destroy()
+        }
+    }
+
+    Label {
+        id: title
+        font.pixelSize: 48
+        text: "Mixer"
+        anchors.horizontalCenter: parent.horizontalCenter
+    }
+
+    ColumnLayout {
+        id: sliders
+        anchors.margins: 80
+        anchors.top: title.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+    }
 }
+

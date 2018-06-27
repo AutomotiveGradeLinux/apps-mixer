@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016 The Qt Company Ltd.
  * Copyright (C) 2016,2017 Konsulko Group
+ * Copyright (C) 2018 IoT.bzh
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "paclient.h"
-#include "pacontrolmodel.h"
 
 #include <QtCore/QDebug>
 #include <QtCore/QCommandLineParser>
@@ -34,6 +32,7 @@
 #include <QQuickWindow>
 #include <libhomescreen.hpp>
 #include <qlibwindowmanager.h>
+#include "mixer.h"
 
 int main(int argc, char *argv[])
 {
@@ -51,14 +50,7 @@ int main(int argc, char *argv[])
 	parser.process(app);
 	QStringList positionalArguments = parser.positionalArguments();
 
-	// Fire up PA client QThread
-	QThread* pat = new QThread;
-	PaClient* client = new PaClient();
-	client->moveToThread(pat);
-	pat->start();
-
-	// Register the PA Control Model
-	qmlRegisterType<PaControlModel>("PaControlModel", 1, 0, "PaControlModel");
+    qmlRegisterType<Mixer>("Mixer", 1, 0, "Mixer");
 
 	QQmlApplicationEngine engine;
 	if (positionalArguments.length() == 2) {
@@ -88,7 +80,7 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 	        // Create an event callbnewack against an event type. Here a lambda is called when SyncDraw event occurs
-        	qwm->set_event_handler(QLibWindowmanager::Event_SyncDraw, [qwm, myname](json_object *object) {
+            qwm->set_event_handler(QLibWindowmanager::Event_SyncDraw, [qwm, myname](json_object*) {
 				fprintf(stderr, "Surface got syncDraw!\n");
 				qwm->endDraw(myname);
 			});
@@ -116,17 +108,6 @@ int main(int argc, char *argv[])
 
 		QQuickWindow *window = qobject_cast<QQuickWindow *>(mobjs.first());
 		QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateSurface()));
-
-		PaControlModel *pacm = mobjs.first()->findChild<PaControlModel *>("pacm");
-		QObject::connect(client, SIGNAL(controlAdded(int, QString, QString, int, int, const char *, int)),
-				 pacm, SLOT(addOneControl(int, QString, QString, int, int, const char *, int)));
-		QObject::connect(client, SIGNAL(volumeExternallyChanged(uint32_t, uint32_t, uint32_t, uint32_t)),
-				 pacm, SLOT(changeExternalVolume(uint32_t, uint32_t, uint32_t, uint32_t)));
-		QObject::connect(pacm, SIGNAL(volumeChanged(uint32_t, uint32_t, uint32_t, uint32_t)),
-				 client, SLOT(setVolume(uint32_t, uint32_t, uint32_t, uint32_t)));
-
-		// Initalize PA client
-		client->init();
 	}
 	return app.exec();
 }
