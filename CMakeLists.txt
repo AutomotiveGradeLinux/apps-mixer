@@ -20,4 +20,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.3)
 
 set(AFB_HELPERS_QTWSCLIENT ON CACHE BOOL "enable Qt's WebSocket client" FORCE)
 
+add_definitions(-DUSE_API_DYN)
+#add_definitions(-DAFB_BINDING_WANT_DYNAPI)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/conf.d/cmake/config.cmake)
