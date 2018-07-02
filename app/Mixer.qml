@@ -29,7 +29,7 @@ ApplicationWindow {
 
     Mixer {
         id: mixer
-        Component.objectName: {
+        Component.onCompleted: {
             mixer.open(bindingAddress)
         }
         onRolesChanged: {
