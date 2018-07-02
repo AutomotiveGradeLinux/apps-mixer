@@ -25,6 +25,12 @@ qt5_add_resources(RESOURCES Mixer.qrc)
 
 PROJECT_TARGET_ADD(mixer)
 
+option(NATIVE_BUILD "Build for native environment, without homescreen and window manager" OFF)
+if(NATIVE_BUILD)
+    message(STATUS "Native build is ON")
+    add_definitions(-DNATIVE_BUILD)
+endif()
+
 add_executable(mixer
 	main.cpp
 	mixer.cpp
@@ -49,9 +55,9 @@ target_link_libraries(mixer
 	afb-helpers
 )
 
-#add_custom_command(TARGET ${TARGET_NAME}
-#PRE_BUILD
-#COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/../package/htdocs
-#COMMAND cp -rv ${CMAKE_CURRENT_SOURCE_DIR}/../htdocs ${CMAKE_CURRENT_BINARY_DIR}/../package/
-#COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/../package/etc
-#COMMAND cp -rv ${CMAKE_CURRENT_SOURCE_DIR}/../etc ${CMAKE_CURRENT_BINARY_DIR}/../package/)
+if(NOT NATIVE_BUILD)
+    target_link_libraries(mixer
+        homescreen
+	qtWindowmanagerWrapper
+    )
+endif()

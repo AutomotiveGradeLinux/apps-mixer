@@ -30,8 +30,12 @@
 #include <QtQuick/qquickitem.h>
 #include <QtQuick/qquickview.h>
 #include <QQuickWindow>
+#ifndef NATIVE_BUILD
 #include <libhomescreen.hpp>
 #include <qlibwindowmanager.h>
+#else
+#include <QScreen>
+#endif
 #include "mixer.h"
 
 int main(int argc, char *argv[])
@@ -50,7 +54,7 @@ int main(int argc, char *argv[])
 	parser.process(app);
 	QStringList positionalArguments = parser.positionalArguments();
 
-    qmlRegisterType<Mixer>("Mixer", 1, 0, "Mixer");
+        qmlRegisterType<Mixer>("Mixer", 1, 0, "Mixer");
 
 	QQmlApplicationEngine engine;
 	if (positionalArguments.length() == 2) {
@@ -68,6 +72,7 @@ int main(int argc, char *argv[])
 		context->setContextProperty(QStringLiteral("bindingAddress"), bindingAddress);
 
 		std::string token = secret.toStdString();
+#ifndef NATIVE_BUILD
 		LibHomeScreen* hs = new LibHomeScreen();
 		QLibWindowmanager* qwm = new QLibWindowmanager();
 
@@ -100,14 +105,30 @@ int main(int argc, char *argv[])
 				}
 			}
 		});
-
+#endif
 		engine.load(QUrl(QStringLiteral("qrc:/Mixer.qml")));
 
 		// Find the instantiated model QObject and connect the signals/slots
-		QList<QObject *> mobjs = engine.rootObjects();
+		QList<QObject*> mobjs = engine.rootObjects();
+                if (mobjs.empty())
+                {
+                    qDebug() << "[ERROR] Failed to load QML!";
+                    return -1;
+                }
 
-		QQuickWindow *window = qobject_cast<QQuickWindow *>(mobjs.first());
-		QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateSurface()));
+                QQuickWindow *window = qobject_cast<QQuickWindow *>(mobjs.first());
+#ifdef NATIVE_BUILD
+                window->setFlags(window->flags() & ~Qt::FramelessWindowHint); // Remove the borderless flag
+                window->setHeight(QGuiApplication::primaryScreen()->geometry().height());
+#else
+                QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateSurface()));
+#endif
 	}
+        else
+        {
+            qDebug() << "[ERROR] No port and token specified!";
+            return -1;
+        }
+
 	return app.exec();
 }
