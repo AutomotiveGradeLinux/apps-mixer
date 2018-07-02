@@ -18,10 +18,11 @@
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt5 COMPONENTS Core Gui QuickControls2 WebSockets QuickWidgets REQUIRED)
-qt5_add_resources(RESOURCES Mixer.qrc)
+find_package(Qt5 COMPONENTS Core Quick QuickControls2 WebSockets REQUIRED)
 
 PROJECT_TARGET_ADD(mixer)
 
@@ -32,9 +33,9 @@ if(NATIVE_BUILD)
 endif()
 
 add_executable(mixer
-	main.cpp
-	mixer.cpp
-	${RESOURCES}
+	"main.cpp"
+	"mixer.cpp"
+        "Mixer.qrc"
 )
 
 set_target_properties(mixer PROPERTIES
@@ -47,10 +48,10 @@ set_target_properties(mixer PROPERTIES
 )
 
 target_link_libraries(mixer
+        Qt5::Core
+        Qt5::Quick
 	Qt5::QuickControls2
 	Qt5::WebSockets
-	homescreen
-	qtWindowmanagerWrapper
 	json-c
 	afb-helpers
 )
@@ -58,6 +59,6 @@ target_link_libraries(mixer
 if(NOT NATIVE_BUILD)
     target_link_libraries(mixer
         homescreen
-	qtWindowmanagerWrapper
+	qtWindowmanager
     )
 endif()
