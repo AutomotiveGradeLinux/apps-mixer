@@ -1,3 +1,7 @@
 *.pro.*
 build/
 .vscode/
+.idea/
+nbproject/
+build-*/
+
