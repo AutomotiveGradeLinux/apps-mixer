@@ -25,12 +25,29 @@ import AGL.Demo.Controls 1.0
 import Mixer 1.0
 
 ApplicationWindow {
+    // ----- Signals
+
+    // ----- Properties
     property Component volumeSlider
 
+    // ----- Setup
     id: root
 
+    // ----- Childs
     Mixer {
+        // ----- Signals
+        signal sliderVolumeChanged(string role, int value)
+
+        // ----- Properties
+
+        // ----- Setup
         id: mixer
+
+        onSliderVolumeChanged: {
+            console.log("======role: " + role + ", volume: " + value);
+            mixer.setVolume(role, value);
+        }
+
         Component.onCompleted: {
             root.volumeSlider = Qt.createComponent("VolumeSlider.qml");
             if (root.VolumeSlider.status !== Component.Ready) {
@@ -38,6 +55,7 @@ ApplicationWindow {
             }
             mixer.open(bindingAddress);
         }
+
         onRolesChanged: {
             // Remove existing sliders
             for(var i = sliders.children.length; i > 0 ; --i) {
@@ -52,17 +70,21 @@ ApplicationWindow {
         }
 
         onVolumeChanged: {
+            console.log("onVolumeChanged(\"" + name + "\", " + value + ")");
             for(var i = 0; i < sliders.children.length ; i++) {
-                console.log("Slider found: " + i);
-                //if (sliders[i].role === name) {
-                //    sliders[i].value = value;
-                //}
+                var sld = sliders.children[i];
+                console.log(i + " - Slider found:" + sld + "[\"" + sld.role + "\"] = " + sld.value);
+                if (sld.role === name) {
+                    sld.value = value;
+                }
             }
         }
 
+        // ----- Functions
         function addSlider(name) {
-            var sld = root.volumeSlider.createObject(sliders);
-            sld.role = name;
+            var sld = root.volumeSlider.createObject(sliders)
+            sld.role = name
+            sld.onSliderValueChanged.connect(mixer.sliderVolumeChanged)
             mixer.getVolume(name); // Update volume
         }
 
