@@ -48,8 +48,8 @@ set_target_properties(mixer PROPERTIES
 )
 
 target_link_libraries(mixer
-        Qt5::Core
-        Qt5::Quick
+    Qt5::Core
+	Qt5::Quick
 	Qt5::QuickControls2
 	Qt5::WebSockets
 	json-c
@@ -59,6 +59,6 @@ target_link_libraries(mixer
 if(NOT NATIVE_BUILD)
     target_link_libraries(mixer
         homescreen
-	qtWindowmanager
+		qtWindowmanager
     )
 endif()

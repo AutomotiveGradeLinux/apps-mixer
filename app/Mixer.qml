@@ -25,67 +25,52 @@ import AGL.Demo.Controls 1.0
 import Mixer 1.0
 
 ApplicationWindow {
+    property Component volumeSlider
+
     id: root
 
     Mixer {
         id: mixer
         Component.onCompleted: {
-            mixer.open(bindingAddress)
+            root.volumeSlider = Qt.createComponent("VolumeSlider.qml");
+            if (root.VolumeSlider.status !== Component.Ready) {
+                console.log("Failed to load the VolumeSlider.qml component: " + root.volumeSlider.errorString());
+            }
+            mixer.open(bindingAddress);
         }
         onRolesChanged: {
             // Remove existing sliders
             for(var i = sliders.children.length; i > 0 ; --i) {
-                console.log("destroying: " + i)
-                sliders.children[i-1].destroy()
+                console.log("destroying: " + i);
+                sliders.children[i-1].destroy();
             }
 
             // Add slider for each role
             for(var j = 0; j < mixer.roles.length; ++j) {
-                addSlider(mixer.roles[j])
+                addSlider(mixer.roles[j]);
+            }
+        }
+
+        onVolumeChanged: {
+            for(var i = 0; i < sliders.children.length ; i++) {
+                console.log("Slider found: " + i);
+                //if (sliders[i].role === name) {
+                //    sliders[i].value = value;
+                //}
             }
         }
 
         function addSlider(name) {
-            Qt.createQmlObject("
-import QtQuick.Layouts 1.1
-import QtQuick.Controls 2.0
-RowLayout {
-    property int value
-    id: slider_" + name + "
-            Layout.minimumHeight: 75
-            Label {
-                font.pixelSize: 24
-                text: \"" + name+ "\"
-                Layout.minimumWidth: 150
-            }
-            Label {
-                id: slider_" + name + "_textvalue
-                font.pixelSize: 24
-                text: \"0 %\"
-            }
-            Slider {
-                id: slider_" + name + "_slider
-                Layout.fillWidth: true
-                from: 0
-                to: 100
-                stepSize: 1
-                snapMode: Slider.SnapOnRelease
-                onValueChanged: {
-                    slider_" + name + "_textvalue.text = value + \" %\"
-                    mixer.setVolume(\"" + name + "\", value)
-                }
-				Component.objectName: {
-                    mixer.getVolume(\"" + name + "\")
-                }
-            }
-        }", sliders, "volumeslider")
+            var sld = root.volumeSlider.createObject(sliders);
+            sld.role = name;
+            mixer.getVolume(name); // Update volume
         }
 
         function deleteChilds(item) {
             for(var i = item.children.length; i > 0 ; i--) {
-                deleteChilds(item.children[i-1])
+                deleteChilds(item.children[i-1]);
             }
-            item.destroy()
+            item.destroy();
         }
     }
 

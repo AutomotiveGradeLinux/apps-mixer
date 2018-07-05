@@ -70,8 +70,9 @@ int main(int argc, char *argv[])
 		bindingAddress.setQuery(query);
 		QQmlContext *context = engine.rootContext();
 		context->setContextProperty(QStringLiteral("bindingAddress"), bindingAddress);
+		qDebug() << "Connect to: " << bindingAddress;
 
-		std::string token = secret.toStdString();
+
 #ifndef NATIVE_BUILD
 		LibHomeScreen* hs = new LibHomeScreen();
 		QLibWindowmanager* qwm = new QLibWindowmanager();
@@ -91,6 +92,7 @@ int main(int argc, char *argv[])
 			});
 
 		// HomeScreen
+		std::string token = secret.toStdString();
 		hs->init(port, token.c_str());
 		// Set the event handler for Event_TapShortcut which will activate the surface for windowmanager
 		hs->set_event_handler(LibHomeScreen::Event_TapShortcut, [qwm, myname](json_object *object){
