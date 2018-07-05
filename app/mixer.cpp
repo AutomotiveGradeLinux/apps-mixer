@@ -61,7 +61,7 @@ void Mixer::setVolume(const QString& name, int value)
     QJsonObject arg;
     arg.insert("action", "volume");
     arg.insert("value", QJsonValue(value));
-    m_client.call("ahl-4a", name, arg, [this, name](bool r, const QJsonValue& v) {
+    m_client.call("ahl-4a", name, arg, [name](bool r, const QJsonValue& v) {
         if (r && v.isObject())
         {
 			// TODO: Success, update the slider
@@ -82,6 +82,13 @@ void Mixer::getVolume(const QString& name)
         if (r && v.isObject())
         {
 			// TODO: Success, update the slider
+            int newVolume = v.toObject()["response"].toObject()["volnew"].toInt();
+            auto currentVolume = volumes_.find(name);
+            if (currentVolume != volumes_.end() && *currentVolume == newVolume)
+                return;
+
+            volumes_[name] = newVolume;
+            emit volumeChanged(name, newVolume);
         }
         else
         {

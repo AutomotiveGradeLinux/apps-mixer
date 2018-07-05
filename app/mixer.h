@@ -21,6 +21,7 @@
 #include <QString>
 #include <QSharedPointer>
 #include <QStringList>
+#include <QMap>
 #include "qafbwebsocketclient.h"
 //#include "volumeslider.h"
 
@@ -31,6 +32,7 @@ class Mixer
     Q_PROPERTY(QStringList roles READ roles NOTIFY rolesChanged)
 
 private:
+    QMap<QString, int> volumes_;
 
 public:
     explicit Mixer(QObject* parent = nullptr);
