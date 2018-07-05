@@ -44,7 +44,7 @@ target_link_libraries(mixer
 	Qt5::QuickControls2
 	Qt5::WebSockets
 	homescreen
-	qtWindowmanagerWrapper
+	qtWindowmanager
 	json-c
 	afb-helpers
 )
