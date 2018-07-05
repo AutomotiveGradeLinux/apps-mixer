@@ -4,6 +4,7 @@ import QtQuick.Controls 2.0
 RowLayout {
     property int value
     property string role
+    signal sliderValueChanged(string role, int value)
 
     onRoleChanged: sliderName.text = role
     onValueChanged: {
@@ -11,7 +12,6 @@ RowLayout {
         sliderControl.value = value;
     }
 
-    //id: slider_" + name + "
     Layout.minimumHeight: 75
     Label {
         id: sliderName
@@ -21,24 +21,19 @@ RowLayout {
     }
     Label {
         id: sliderValue
-        //id: slider_" + name + "_textvalue
         font.pixelSize: 24
         text: "0 %"
     }
     Slider {
         id: sliderControl
-        //id: slider_" + name + "_slider
         Layout.fillWidth: true
         from: 0
         to: 100
         stepSize: 1
         snapMode: Slider.SnapOnRelease
         onValueChanged: {
-            //slider_" + name + "_textvalue.text = value + \" %\"
-            //mixer.setVolume(\"" + name + "\", value)
+            sliderValue.text = value + " %";
+            sliderValueChanged(role, value);
         }
-        //Component.onCompleted: {
-            //mixer.getVolume(\"" + name + "\")
-        //}
     }
 }
