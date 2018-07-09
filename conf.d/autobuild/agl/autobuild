@@ -15,6 +15,7 @@ pushd $BUILD_DIR
 
 	if [ "$1" == "package" ]; then
 		make widget
+		cp *.wgt package/
 	fi
 
 popd
