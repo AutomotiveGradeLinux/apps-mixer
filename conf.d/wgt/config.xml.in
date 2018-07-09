@@ -4,11 +4,10 @@
   <icon src="@PROJECT_ICON@"/>
   <content src="@WIDGET_ENTRY_POINT@" type="@WIDGET_TYPE@"/>
   <description>@PROJECT_DESCRIPTION@</description>
-  <author>
-	  <author href="https://www.automotivelinux.org/" email = "info@automotivelinux.org">
-		Loïc Collignon &lt;loic.collignon@iot.bzh&gt;
-		Matt Porter &lt;mporter@konsulko.com&gt;
-	  </author>
+  <author href="https://www.automotivelinux.org/" email = "info@automotivelinux.org">
+	Loïc Collignon &lt;loic.collignon@iot.bzh&gt;
+	Matt Porter &lt;mporter@konsulko.com&gt;
+  </author>
   <license>@PROJECT_LICENSE@</license>
   <feature name="urn:AGL:widget:required-api">
     <param name="windowmanager" value="ws" />
