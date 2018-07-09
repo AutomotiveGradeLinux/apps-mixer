@@ -2,7 +2,7 @@
 <widget xmlns="http://www.w3.org/ns/widgets" id="@PROJECT_NAME@" version="@PROJECT_VERSION@">
   <name>@PROJECT_NAME@</name>
   <icon src="@PROJECT_ICON@"/>
-  <content src="@WIDGET_ENTRY_POINT@" type="@WIDGET_TYPE@"/>
+  <content src="bin/@WIDGET_ENTRY_POINT@" type="@WIDGET_TYPE@"/>
   <description>@PROJECT_DESCRIPTION@</description>
   <author href="https://www.automotivelinux.org/" email = "info@automotivelinux.org">
 	Loïc Collignon &lt;loic.collignon@iot.bzh&gt;
