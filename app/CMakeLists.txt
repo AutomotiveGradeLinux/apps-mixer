@@ -59,6 +59,6 @@ target_link_libraries(mixer
 if(NOT NATIVE_BUILD)
     target_link_libraries(mixer
         homescreen
-		qtWindowmanager
+		qtwindowmanager
     )
 endif()
