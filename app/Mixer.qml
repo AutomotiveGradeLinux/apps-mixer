@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-// BUG: ValueChanged event is raised by sliders when you are moving the caret, should be raised only when you release it.
-// TODO: Call mixer.setVolume(sliderName, Value) on value change
-// TODO: Call mixer.getVolume(sliderName) on load
-
 import QtQuick 2.6
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.0
@@ -49,10 +45,11 @@ ApplicationWindow {
         }
 
         Component.onCompleted: {
-            root.volumeSlider = Qt.createComponent("VolumeSlider.qml");
-            if (root.VolumeSlider.status !== Component.Ready) {
-                console.log("Failed to load the VolumeSlider.qml component: " + root.volumeSlider.errorString());
+            var vs = Qt.createComponent("VolumeSlider.qml");
+            if (vs.status !== Component.Ready) {
+                console.log("Failed to load the VolumeSlider.qml component: " + vs.errorString());
             }
+            root.volumeSlider = vs
             mixer.open(bindingAddress);
         }
 
