@@ -28,6 +28,8 @@ ApplicationWindow {
 
     // ----- Setup
     id: root
+    width: container.width * container.scale
+    height: container.height * container.scale
 
     // ----- Childs
     Mixer {
@@ -93,19 +95,27 @@ ApplicationWindow {
         }
     }
 
-    Label {
-        id: title
-        font.pixelSize: 48
-        text: "Mixer"
-        anchors.horizontalCenter: parent.horizontalCenter
-    }
+    Item {
+        id: container
+        anchors.centerIn: parent
+        width: 1080
+        height: 1487
+        scale: screenInfo.scale_factor()
 
-    ColumnLayout {
-        id: sliders
-        anchors.margins: 80
-        anchors.top: title.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
+        Label {
+            id: title
+            font.pixelSize: 48
+            text: "Mixer"
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+
+        ColumnLayout {
+            id: sliders
+            anchors.margins: 80
+            anchors.top: title.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+        }
     }
 }
 
