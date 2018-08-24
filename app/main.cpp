@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 			if(json_object_object_get_ex(object, "application_name", &appnameJ))
 			{
 				const char *appname = json_object_get_string(appnameJ);
-				if(myname == appname)
+				if(QString::compare(myname, appname, Qt::CaseInsensitive) == 0)
 				{
 					qDebug("Surface %s got tapShortcut\n", appname);
 					qwm->activateSurface(myname);
