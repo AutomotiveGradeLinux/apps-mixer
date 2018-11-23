@@ -83,7 +83,7 @@ void Mixer::getVolume(const QString& name)
         {
 			// TODO: Success, update the slider
             qDebug() << "Volume changed: " << v;
-            int newVolume = v.toObject()["response"].toObject()["response"].toObject()["volnew"].toInt();
+            int newVolume = v.toObject()["response"].toObject()["volnew"].toInt();
             auto currentVolume = volumes_.find(name);
             if (currentVolume != volumes_.end() && *currentVolume == newVolume)
                 return;
