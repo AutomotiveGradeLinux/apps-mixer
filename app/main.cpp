@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	parser.process(app);
 	QStringList positionalArguments = parser.positionalArguments();
 
-        qmlRegisterType<Mixer>("Mixer", 1, 0, "Mixer");
+	qmlRegisterType<Mixer>("Mixer", 1, 0, "Mixer");
 
 	QQmlApplicationEngine engine;
 	if (positionalArguments.length() == 2) {
@@ -87,11 +87,11 @@ int main(int argc, char *argv[])
 		if (qwm->requestSurface(graphic_role) != 0) {
 			exit(EXIT_FAILURE);
 		}
-	        // Create an event callbnewack against an event type. Here a lambda is called when SyncDraw event occurs
-            qwm->set_event_handler(QLibWindowmanager::Event_SyncDraw, [qwm, &graphic_role](json_object*) {
-				fprintf(stderr, "Surface got syncDraw!\n");
-				qwm->endDraw(graphic_role);
-			});
+		// Create an event callbnewack against an event type. Here a lambda is called when SyncDraw event occurs
+		qwm->set_event_handler(QLibWindowmanager::Event_SyncDraw, [qwm, &graphic_role](json_object*) {
+			fprintf(stderr, "Surface got syncDraw!\n");
+			qwm->endDraw(graphic_role);
+		});
 
 		// HomeScreen
 		std::string token = secret.toStdString();
@@ -102,29 +102,30 @@ int main(int argc, char *argv[])
 			qwm->activateWindow(graphic_role);
 		});
 #endif
+
 		engine.load(QUrl(QStringLiteral("qrc:/Mixer.qml")));
 
 		// Find the instantiated model QObject and connect the signals/slots
 		QList<QObject*> mobjs = engine.rootObjects();
-                if (mobjs.empty())
-                {
-                    qDebug() << "[ERROR] Failed to load QML!";
-                    return -1;
-                }
+		if (mobjs.empty())
+		{
+			qDebug() << "[ERROR] Failed to load QML!";
+			return -1;
+		}
 
-                QQuickWindow *window = qobject_cast<QQuickWindow *>(mobjs.first());
+		QQuickWindow *window = qobject_cast<QQuickWindow *>(mobjs.first());
 #ifdef NATIVE_BUILD
-                window->setFlags(window->flags() & ~Qt::FramelessWindowHint); // Remove the borderless flag
-                window->setHeight(QGuiApplication::primaryScreen()->geometry().height());
+		window->setFlags(window->flags() & ~Qt::FramelessWindowHint); // Remove the borderless flag
+		window->setHeight(QGuiApplication::primaryScreen()->geometry().height());
 #else
-                QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateWindow()));
+		QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateWindow()));
 #endif
 	}
-        else
-        {
-            qDebug() << "[ERROR] No port and token specified!";
-            return -1;
-        }
+	else
+	{
+		qDebug() << "[ERROR] No port and token specified!";
+		return -1;
+	}
 
 	return app.exec();
 }
