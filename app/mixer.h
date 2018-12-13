@@ -23,7 +23,6 @@
 #include <QStringList>
 #include <QMap>
 #include "qafbwebsocketclient.h"
-//#include "volumeslider.h"
 
 class Mixer
     : public QObject
@@ -32,7 +31,10 @@ class Mixer
     Q_PROPERTY(QStringList roles READ roles NOTIFY rolesChanged)
 
 private:
-    QMap<QString, int> volumes_;
+    QUrl m_url;
+    QMap<QString, int> m_volumes;
+    QStringList m_roles;
+    QAfbWebsocketClient m_client;
 
 public:
     explicit Mixer(QObject* parent = nullptr);
@@ -49,8 +51,8 @@ signals:
 
 private slots:
     void onClientConnected();
-
-private:
-    QStringList m_roles;
-    QAfbWebsocketClient m_client;
+    void onClientDisconnected();
+    void onClientError(QAbstractSocket::SocketError se);
+    void onRetryOpen();
+    void onClientEventReceived(QString eventName, const QJsonValue& data);
 };

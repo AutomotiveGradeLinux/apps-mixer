@@ -18,82 +18,120 @@
 
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QTimer>
 #include <QtDebug>
 #include "mixer.h"
 
 Mixer::Mixer(QObject* parent)
     : QObject(parent)
 {
-    connect(&m_client, SIGNAL(connected()), this, SLOT(onClientConnected()));
+	connect(&m_client, SIGNAL(connected()), this, SLOT(onClientConnected()));
+	connect(&m_client, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
+	connect(&m_client, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
+	connect(&m_client, SIGNAL(eventReceived(QString, const QJsonValue&)), this, SLOT(onClientEventReceived(QString, const QJsonValue&)));
+
+	m_roles.append("Multimedia");
+	m_roles.append("Navigation");
+	m_roles.append("Emergency");
 }
 
 QStringList Mixer::roles() const
 {
-    return m_roles;
+	return m_roles;
 }
 
-void Mixer::open(const QUrl &url)
+void Mixer::open(const QUrl& url)
 {
-    m_client.open(url);
+	m_url = url;
+	m_client.open(m_url);
 }
 
 void Mixer::onClientConnected()
 {
-    // Call HAL to populate list
-    m_client.call("ahl-4a", "get_roles", QJsonValue(), [this](bool r, const QJsonValue& val) {
-        if (r)
-        {
-            m_roles.clear();
-            //BUG: should be able to add this, but not handled right now: m_roles.append("playback");
-            QJsonArray cards = val.toObject()["response"].toArray();
-            foreach (const QJsonValue& card, cards)
-            {
-                m_roles.append(card.toString());
-                qDebug() << "Mixer::onClientConnected - added this HAL: " << card.toString();
-            }
-            emit rolesChanged();
-        }
-    });
+	// Subscribe to 4a events
+	m_client.call("ahl-4a", "subscribe", QJsonValue(), [this](bool r, const QJsonValue& val) {
+		if (r)
+			qDebug() << "Mixer::onClientConnected - subscribed to 4a events!";
+		else
+			qCritical () << "Mixer::onClientConnected - Failed to subscribe to 4a events!";
+	});
+
+	// Call HAL to populate list
+	m_client.call("ahl-4a", "get_roles", QJsonValue(), [this](bool r, const QJsonValue& val) {
+	        if (r)
+	        {
+			m_roles.clear();
+			//BUG: should be able to add this, but not handled right now: m_roles.append("playback");
+			QJsonArray cards = val.toObject()["response"].toArray();
+			foreach (const QJsonValue& card, cards)
+			{
+				m_roles.append(card.toString());
+				qDebug() << "Mixer::onClientConnected - added this HAL: " << card.toString();
+			}
+			emit rolesChanged();
+		}
+	});
+}
+
+void Mixer::onClientDisconnected()
+{
+	qDebug() << "Mixer::onClientDisconnected";
+	QTimer::singleShot(1000, this, SLOT(onRetryOpen()));
+}
+
+void Mixer::onClientError(QAbstractSocket::SocketError se)
+{
+	qDebug() << "Mixer::onClientError: " << se;
+}
+
+void Mixer::onRetryOpen()
+{
+	m_client.open(m_url);
+}
+
+void Mixer::onClientEventReceived(QString eventName, const QJsonValue& data)
+{
+	qDebug() << "Mixer::onClientEventReceived[" << eventName << "]: " << data;
+	if (eventName == "ahl-4a/volume_changed")
+	{
+		QString role = data.toObject()["role"].toString();
+		int volume = data.toObject()["volume"].toInt();
+		m_volumes[role] = volume;
+		emit volumeChanged(role, volume);
+	}
 }
 
 void Mixer::setVolume(const QString& name, int value)
 {
-    QJsonObject arg;
-    arg.insert("action", "volume");
-    arg.insert("value", QJsonValue(value));
-    m_client.call("ahl-4a", name, arg, [name](bool r, const QJsonValue& v) {
-        if (r && v.isObject())
-        {
-			// TODO: Success, update the slider
-        }
-        else
-        {
-			// TODO: Failed, reset the slider to previous value
-        }
-    });
+	auto currentVolume = m_volumes.find(name);
+	if (currentVolume != m_volumes.end() && *currentVolume == value)
+        return;
+
+	QJsonObject arg;
+	arg.insert("action", "volume");
+	arg.insert("value", QJsonValue(value));
+	m_client.call("ahl-4a", name, arg, [name](bool r, const QJsonValue& v) {
+		/* Nothing to do, events will update sliders*/
+	});
 }
 
 void Mixer::getVolume(const QString& name)
 {
-    QJsonObject arg;
-    arg.insert("action", "volume");
-    arg.insert("value", QJsonValue("+0")); // FIXME: Hack to get volume: ask for a relative change with a delta of zero
-    m_client.call("ahl-4a", name, arg, [this, name](bool r, const QJsonValue& v) {
-        if (r && v.isObject())
-        {
+	QJsonObject arg;
+	arg.insert("action", "volume");
+	arg.insert("value", QJsonValue("+0")); // FIXME: Hack to get volume: ask for a relative change with a delta of zero
+	m_client.call("ahl-4a", name, arg, [this, name](bool r, const QJsonValue& v) {
+		if (r && v.isObject())
+		{
 			// TODO: Success, update the slider
-            qDebug() << "Volume changed: " << v;
-            int newVolume = v.toObject()["response"].toObject()["volnew"].toInt();
-            auto currentVolume = volumes_.find(name);
-            if (currentVolume != volumes_.end() && *currentVolume == newVolume)
-                return;
+			qDebug() << "Volume changed: " << v;
+			int newVolume = v.toObject()["response"].toObject()["volnew"].toInt();
+			auto currentVolume = m_volumes.find(name);
+			if (currentVolume != m_volumes.end() && *currentVolume == newVolume)
+				return;
 
-            volumes_[name] = newVolume;
-            emit volumeChanged(name, newVolume);
-        }
-        else
-        {
-			// TODO: Failed, what to do ?
-        }
-    });
+			m_volumes[name] = newVolume;
+			emit volumeChanged(name, newVolume);
+		}
+	});
 }
