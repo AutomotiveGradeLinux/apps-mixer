@@ -25,34 +25,34 @@
 #include "qafbwebsocketclient.h"
 
 class Mixer
-    : public QObject
+	: public QObject
 {
-    Q_OBJECT
-    Q_PROPERTY(QStringList roles READ roles NOTIFY rolesChanged)
+	Q_OBJECT
+	Q_PROPERTY(QStringList roles READ roles NOTIFY rolesChanged)
 
 private:
-    QUrl m_url;
-    QMap<QString, int> m_volumes;
-    QStringList m_roles;
-    QAfbWebsocketClient m_client;
+	QUrl m_url;
+	QMap<QString, int> m_volumes;
+	QStringList m_roles;
+	QAfbWebsocketClient m_client;
 
 public:
-    explicit Mixer(QObject* parent = nullptr);
-    Mixer(const Mixer&) = delete;
+	explicit Mixer(QObject* parent = nullptr);
+	Mixer(const Mixer&) = delete;
 
-    Q_INVOKABLE void open(const QUrl& url);
-    Q_INVOKABLE QStringList roles() const;
-    Q_INVOKABLE void setVolume(const QString& name, int value);
-    Q_INVOKABLE void getVolume(const QString& name);
+	Q_INVOKABLE void open(const QUrl& url);
+	Q_INVOKABLE QStringList roles() const;
+	Q_INVOKABLE void setVolume(const QString& name, int value);
+	Q_INVOKABLE void getVolume(const QString& name);
 
 signals:
-    void rolesChanged();
-    void volumeChanged(const QString& name, int value);
+	void rolesChanged();
+	void volumeChanged(const QString& name, int value);
 
 private slots:
-    void onClientConnected();
-    void onClientDisconnected();
-    void onClientError(QAbstractSocket::SocketError se);
-    void onRetryOpen();
-    void onClientEventReceived(QString eventName, const QJsonValue& data);
+	void onClientConnected();
+	void onClientDisconnected();
+	void onClientError(QAbstractSocket::SocketError se);
+	void onRetryOpen();
+	void onClientEventReceived(QString eventName, const QJsonValue& data);
 };
