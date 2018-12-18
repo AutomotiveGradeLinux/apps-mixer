@@ -20,73 +20,99 @@
 #include <QJsonObject>
 #include <QTimer>
 #include <QtDebug>
-#include "mixer.h"
+#include "mixer.hpp"
 
 Mixer::Mixer(QObject* parent)
-    : QObject(parent)
+	: QObject(parent)
 {
 	connect(&m_client, SIGNAL(connected()), this, SLOT(onClientConnected()));
 	connect(&m_client, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
 	connect(&m_client, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
 	connect(&m_client, SIGNAL(eventReceived(QString, const QJsonValue&)), this, SLOT(onClientEventReceived(QString, const QJsonValue&)));
-
-	m_roles.append("Multimedia");
-	m_roles.append("Navigation");
-	m_roles.append("Emergency");
-}
-
-QStringList Mixer::roles() const
-{
-	return m_roles;
 }
 
 void Mixer::open(const QUrl& url)
 {
 	m_url = url;
-	m_client.open(m_url);
+	TryOpen();
+}
+
+QList<QObject*> Mixer::roles() const
+{
+	return m_roles;
+}
+
+void Mixer::getRoleVolume(AudioRole* role)
+{
+	if (role == nullptr) return;
+
+	QJsonObject arg;
+	arg.insert("action", "volume");
+	arg.insert("value", QJsonValue("+0")); // FIXME: Hack to get volume: ask for a relative change with a delta of zero
+
+	m_client.call("ahl-4a", role->Name().toLocal8Bit().data(), arg, [role](bool r, const QJsonValue& v) {
+		if (r && v.isObject())
+		{
+			qDebug() << role->Name() << " Volume changed: " << v;
+			int newVolume = v.toObject()["response"].toObject()["volnew"].toInt();
+			role->setValue(newVolume);
+		}
+	});
+}
+
+void Mixer::setRoleVolume(AudioRole* role)
+{
+	if (role == nullptr) return;
+	role->BeginUpdate();
+
+	QJsonObject arg;
+	arg.insert("action", "volume");
+	arg.insert("value", QJsonValue(role->Value()));
+	m_client.call("ahl-4a", role->Name().toLocal8Bit().data(), arg, [role](bool r, const QJsonValue& v) {
+		// Nothing to do, events will update sliders
+		role->EndUpdate();
+	});
 }
 
 void Mixer::onClientConnected()
 {
 	// Subscribe to 4a events
 	m_client.call("ahl-4a", "subscribe", QJsonValue(), [this](bool r, const QJsonValue& val) {
-		if (r)
-			qDebug() << "Mixer::onClientConnected - subscribed to 4a events!";
-		else
-			qCritical () << "Mixer::onClientConnected - Failed to subscribe to 4a events!";
+		if (r) qDebug() << "Mixer::onClientConnected - subscribed to 4a events!";
+		else qCritical () << "Mixer::onClientConnected - Failed to subscribe to 4a events!";
 	});
 
 	// Call HAL to populate list
 	m_client.call("ahl-4a", "get_roles", QJsonValue(), [this](bool r, const QJsonValue& val) {
-	        if (r)
-	        {
+		if (r)
+		{
+			for(QObject* role : m_roles) delete role;
 			m_roles.clear();
-			//BUG: should be able to add this, but not handled right now: m_roles.append("playback");
+
 			QJsonArray cards = val.toObject()["response"].toArray();
 			foreach (const QJsonValue& card, cards)
 			{
-				m_roles.append(card.toString());
+				AudioRole* ar = new AudioRole(card.toString(), 0);
+				getRoleVolume(reinterpret_cast<AudioRole*>(ar));
+				connect(ar, SIGNAL(ValueChanged()), this, SLOT(onRoleValueChanged()));
+				m_roles.append(ar);
 				qDebug() << "Mixer::onClientConnected - added this HAL: " << card.toString();
 			}
 			emit rolesChanged();
 		}
 	});
+
 }
 
 void Mixer::onClientDisconnected()
 {
-	qDebug() << "Mixer::onClientDisconnected";
-	QTimer::singleShot(1000, this, SLOT(onRetryOpen()));
+	qDebug() << "Mixer::onClientDisconnected!";
+	QTimer::singleShot(1000, this, SLOT(TryOpen()));
 }
 
 void Mixer::onClientError(QAbstractSocket::SocketError se)
 {
 	qDebug() << "Mixer::onClientError: " << se;
-}
-
-void Mixer::onRetryOpen()
-{
-	m_client.open(m_url);
 }
 
 void Mixer::onClientEventReceived(QString eventName, const QJsonValue& data)
@@ -96,42 +122,26 @@ void Mixer::onClientEventReceived(QString eventName, const QJsonValue& data)
 	{
 		QString role = data.toObject()["role"].toString();
 		int volume = data.toObject()["volume"].toInt();
-		m_volumes[role] = volume;
-		emit volumeChanged(role, volume);
+		for(QObject* o : m_roles)
+		{
+			AudioRole* ar = reinterpret_cast<AudioRole*>(o);
+			if (ar && ar->Name() == role)
+			{
+				ar->setValue(volume);
+			}
+		}
 	}
 }
 
-void Mixer::setVolume(const QString& name, int value)
+void Mixer::onRoleValueChanged()
 {
-	auto currentVolume = m_volumes.find(name);
-	if (currentVolume != m_volumes.end() && *currentVolume == value)
-        return;
-
-	QJsonObject arg;
-	arg.insert("action", "volume");
-	arg.insert("value", QJsonValue(value));
-	m_client.call("ahl-4a", name, arg, [name](bool r, const QJsonValue& v) {
-		/* Nothing to do, events will update sliders*/
-	});
+	AudioRole* role = reinterpret_cast<AudioRole*>(QObject::sender());
+	if (role == nullptr) return;
+	setRoleVolume(role);
 }
 
-void Mixer::getVolume(const QString& name)
+void Mixer::TryOpen()
 {
-	QJsonObject arg;
-	arg.insert("action", "volume");
-	arg.insert("value", QJsonValue("+0")); // FIXME: Hack to get volume: ask for a relative change with a delta of zero
-	m_client.call("ahl-4a", name, arg, [this, name](bool r, const QJsonValue& v) {
-		if (r && v.isObject())
-		{
-			// TODO: Success, update the slider
-			qDebug() << "Volume changed: " << v;
-			int newVolume = v.toObject()["response"].toObject()["volnew"].toInt();
-			auto currentVolume = m_volumes.find(name);
-			if (currentVolume != m_volumes.end() && *currentVolume == newVolume)
-				return;
-
-			m_volumes[name] = newVolume;
-			emit volumeChanged(name, newVolume);
-		}
-	});
+	qDebug() << "Mixer::TryOpen: " << m_url;
+	m_client.open(m_url);
 }

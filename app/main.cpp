@@ -20,6 +20,7 @@
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QUrlQuery>
 #include <QtCore/QDir>
+#include <QtCore/QList>
 #include <QtCore/QStandardPaths>
 #include <QtCore/QThread>
 #include <QtGui/QGuiApplication>
@@ -36,7 +37,8 @@
 #else
 #include <QScreen>
 #endif
-#include "mixer.h"
+#include "mixer.hpp"
+#include "audiorole.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -82,7 +84,7 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 		AGLScreenInfo screenInfo(qwm->get_scale_factor());
-		engine.rootContext()->setContextProperty(QStringLiteral("screenInfo"), &screenInfo);
+		engine.rootContext()->setContextProperty(QStringLiteral("scale_factor"), screenInfo.scale_factor());
 		// Request a surface as described in layers.json windowmanager’s file
 		if (qwm->requestSurface(myname) != 0) {
 			exit(EXIT_FAILURE);
@@ -109,8 +111,9 @@ int main(int argc, char *argv[])
 				}
 			}
 		});
+#else
+		engine.rootContext()->setContextProperty(QStringLiteral("scale_factor"), 1.0);
 #endif
-
 		engine.load(QUrl(QStringLiteral("qrc:/Mixer.qml")));
 
 		// Find the instantiated model QObject and connect the signals/slots

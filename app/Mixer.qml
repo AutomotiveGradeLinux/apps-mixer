@@ -21,101 +21,45 @@ import AGL.Demo.Controls 1.0
 import Mixer 1.0
 
 ApplicationWindow {
-    // ----- Signals
+	// ----- Signals
 
-    // ----- Properties
-    property Component volumeSlider
+	// ----- Properties
+	property Component volumeSlider
 
-    // ----- Setup
-    id: root
-    width: container.width * container.scale
-    height: container.height * container.scale
+	// ----- Setup
+	id: root
+	width: 1080 * roles.scale
+	height: 1487 * roles.scale
 
-    // ----- Childs
-    Mixer {
-        // ----- Signals
-        signal sliderVolumeChanged(string role, int value)
+	// ----- Childs
+	Label {
+		id: title
+		font.pixelSize: 48
+		text: "Mixer"
+		anchors.horizontalCenter: parent.horizontalCenter
+	}
 
-        // ----- Properties
+	Mixer {
+		signal sliderVolumeChanged(string role, int value)
 
-        // ----- Setup
-        id: mixer
+		id: mixer
 
-        onSliderVolumeChanged: {
-            console.log("======role: " + role + ", volume: " + value);
-            mixer.setVolume(role, value);
-        }
+		Component.onCompleted: {
+			mixer.open(bindingAddress);
+		}
+	}
 
-        Component.onCompleted: {
-            var vs = Qt.createComponent("VolumeSlider.qml");
-            if (vs.status !== Component.Ready) {
-                console.log("Failed to load the VolumeSlider.qml component: " + vs.errorString());
-            }
-            root.volumeSlider = vs
-            mixer.open(bindingAddress);
-        }
+	ListView {
+		id: roles
+		model: mixer.roles
+		scale: scale_factor
 
-        onRolesChanged: {
-            // Remove existing sliders
-            for(var i = sliders.children.length; i > 0 ; --i) {
-                console.log("destroying: " + i);
-                sliders.children[i-1].destroy();
-            }
+		anchors.margins: 80
+		anchors.top: title.bottom
+		anchors.left: parent.left
+		anchors.right: parent.right
+		anchors.bottom: parent.bottom
 
-            // Add slider for each role
-            for(var j = 0; j < mixer.roles.length; ++j) {
-                addSlider(mixer.roles[j]);
-            }
-        }
-
-        onVolumeChanged: {
-            console.log("onVolumeChanged(\"" + name + "\", " + value + ")");
-            for(var i = 0; i < sliders.children.length ; i++) {
-                var sld = sliders.children[i];
-                console.log(i + " - Slider found:" + sld + "[\"" + sld.role + "\"] = " + sld.value);
-                if (sld.role === name) {
-                    sld.value = value;
-                }
-            }
-        }
-
-        // ----- Functions
-        function addSlider(name) {
-            var sld = root.volumeSlider.createObject(sliders)
-            sld.role = name
-            sld.onSliderValueChanged.connect(mixer.sliderVolumeChanged)
-            mixer.getVolume(name); // Update volume
-        }
-
-        function deleteChilds(item) {
-            for(var i = item.children.length; i > 0 ; i--) {
-                deleteChilds(item.children[i-1]);
-            }
-            item.destroy();
-        }
-    }
-
-    Item {
-        id: container
-        anchors.centerIn: parent
-        width: 1080
-        height: 1487
-        scale: screenInfo.scale_factor()
-
-        Label {
-            id: title
-            font.pixelSize: 48
-            text: "Mixer"
-            anchors.horizontalCenter: parent.horizontalCenter
-        }
-
-        ColumnLayout {
-            id: sliders
-            anchors.margins: 80
-            anchors.top: title.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-        }
-    }
+		delegate: VolumeSlider {}
+	}
 }
-
