@@ -35,7 +35,8 @@ endif()
 add_executable(mixer
 	"main.cpp"
 	"mixer.cpp"
-        "Mixer.qrc"
+	"audiorole.cpp"
+	"Mixer.qrc"
 )
 
 set_target_properties(mixer PROPERTIES

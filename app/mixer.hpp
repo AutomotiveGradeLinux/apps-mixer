@@ -20,20 +20,20 @@
 #include <QObject>
 #include <QString>
 #include <QSharedPointer>
-#include <QStringList>
+#include <QList>
 #include <QMap>
 #include "qafbwebsocketclient.h"
+#include "audiorole.hpp"
 
 class Mixer
 	: public QObject
 {
 	Q_OBJECT
-	Q_PROPERTY(QStringList roles READ roles NOTIFY rolesChanged)
+	Q_PROPERTY(QList<QObject*> roles READ roles NOTIFY rolesChanged)
 
 private:
 	QUrl m_url;
-	QMap<QString, int> m_volumes;
-	QStringList m_roles;
+	QList<QObject*> m_roles;
 	QAfbWebsocketClient m_client;
 
 public:
@@ -41,9 +41,9 @@ public:
 	Mixer(const Mixer&) = delete;
 
 	Q_INVOKABLE void open(const QUrl& url);
-	Q_INVOKABLE QStringList roles() const;
-	Q_INVOKABLE void setVolume(const QString& name, int value);
-	Q_INVOKABLE void getVolume(const QString& name);
+	Q_INVOKABLE QList<QObject*> roles() const;
+	Q_INVOKABLE void getRoleVolume(AudioRole* role);
+	Q_INVOKABLE void setRoleVolume(AudioRole* role);
 
 signals:
 	void rolesChanged();
@@ -53,6 +53,9 @@ private slots:
 	void onClientConnected();
 	void onClientDisconnected();
 	void onClientError(QAbstractSocket::SocketError se);
-	void onRetryOpen();
 	void onClientEventReceived(QString eventName, const QJsonValue& data);
+
+	void onRoleValueChanged();
+
+	void TryOpen();
 };

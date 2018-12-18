@@ -1,39 +1,39 @@
+import QtQuick 2.6
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.0
 
 RowLayout {
-    property int value
-    property string role
-    signal sliderValueChanged(string role, int value)
+	anchors.left: parent.left
+	anchors.right: parent.right
+	Layout.minimumHeight: 75
 
-    onRoleChanged: sliderName.text = role
-    onValueChanged: {
-        sliderValue.text = value + " %"
-        sliderControl.value = value;
-    }
+	Label {
+		font.pixelSize: 24
+		text: modelData.name
+		Layout.minimumWidth: 150
+		Layout.maximumWidth: 150
+		elide: Text.ElideRight
+	}
+	Label {
+		font.pixelSize: 24
+		text: modelData.value + " %"
+		Layout.minimumWidth: 75
+		Layout.maximumWidth: 75
+		elide: Text.ElideRight
+	}
+	Slider {
+		id: roleValueSlider
+		Layout.fillWidth: true
+		from: 0
+		to: 100
+		value: modelData.value
+		stepSize: 1
+		snapMode: Slider.SnapOnRelease
+	}
 
-    Layout.minimumHeight: 75
-    Label {
-        id: sliderName
-        font.pixelSize: 24
-        text: role
-        Layout.minimumWidth: 150
-    }
-    Label {
-        id: sliderValue
-        font.pixelSize: 24
-        text: "0 %"
-    }
-    Slider {
-        id: sliderControl
-        Layout.fillWidth: true
-        from: 0
-        to: 100
-        stepSize: 1
-        snapMode: Slider.SnapOnRelease
-        onValueChanged: {
-            sliderValue.text = value + " %";
-            sliderValueChanged(role, value);
-        }
-    }
+	Binding {
+		target: modelData
+		property: "value"
+		value: roleValueSlider.value
+	}
 }
