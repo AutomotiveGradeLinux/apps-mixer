@@ -59,6 +59,7 @@ ApplicationWindow {
 		anchors.left: parent.left
 		anchors.right: parent.right
 		anchors.bottom: parent.bottom
+		spacing: 10
 
 		delegate: VolumeSlider {}
 	}
