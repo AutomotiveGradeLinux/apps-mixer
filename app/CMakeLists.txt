@@ -22,7 +22,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt5 COMPONENTS Core Quick QuickControls2 WebSockets REQUIRED)
+find_package(Qt5 COMPONENTS WebSockets AGLExtras REQUIRED)
 
 PROJECT_TARGET_ADD(mixer)
 
@@ -49,9 +49,7 @@ set_target_properties(mixer PROPERTIES
 )
 
 target_link_libraries(mixer
-    Qt5::Core
-	Qt5::Quick
-	Qt5::QuickControls2
+	Qt5::AGLExtras
 	Qt5::WebSockets
 	json-c
 	afb-helpers
@@ -59,7 +57,5 @@ target_link_libraries(mixer
 
 if(NOT NATIVE_BUILD)
     target_link_libraries(mixer
-        homescreen
-		qtwindowmanager
     )
 endif()
