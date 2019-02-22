@@ -42,7 +42,6 @@ public:
 
 	Q_INVOKABLE void open(const QUrl& url);
 	Q_INVOKABLE QList<QObject*> roles() const;
-	Q_INVOKABLE void getRoleVolume(AudioRole* role);
 	Q_INVOKABLE void setRoleVolume(AudioRole* role);
 
 signals:
@@ -50,6 +49,7 @@ signals:
 	void volumeChanged(const QString& name, int value);
 
 private slots:
+	void parseControls(const QJsonValue & v);
 	void onClientConnected();
 	void onClientDisconnected();
 	void onClientError(QAbstractSocket::SocketError se);

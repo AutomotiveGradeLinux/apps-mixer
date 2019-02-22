@@ -37,8 +37,7 @@ void AudioRole::setValue(int value)
 	if (m_Value != value)
 	{
 		m_Value = value;
-		if (m_Updating == 0)
-			emit ValueChanged();
+		emit ValueChanged();
 	}
 }
 
@@ -47,8 +46,11 @@ void AudioRole::BeginUpdate()
 	m_Updating++;
 }
 
-void AudioRole::EndUpdate()
+bool AudioRole::EndUpdate()
 {
-	if (m_Updating > 0) m_Updating--;
-	//if (m_Updating == 0) emit ValueChanged();
+	if (m_Updating > 0) {
+		m_Updating--;
+		return true;
+	}
+	return false;
 }

@@ -26,7 +26,7 @@ public:
 	void setValue(int value);
 
 	void BeginUpdate();
-	void EndUpdate();
+	bool EndUpdate();
 
 signals:
 	void NameChanged();
