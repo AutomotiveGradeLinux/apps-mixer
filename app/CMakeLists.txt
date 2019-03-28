@@ -52,7 +52,7 @@ target_link_libraries(mixer
 	Qt5::AGLExtras
 	Qt5::WebSockets
 	json-c
-	afb-helpers
+	libafb-helpers-qt.a
 )
 
 if(NOT NATIVE_BUILD)
