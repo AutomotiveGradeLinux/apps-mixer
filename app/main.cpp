@@ -32,7 +32,7 @@
 #include <QtQuick/qquickview.h>
 #include <QQuickWindow>
 #ifndef NATIVE_BUILD
-#include <libhomescreen.hpp>
+#include <qlibhomescreen.h>
 #include <qlibwindowmanager.h>
 #else
 #include <QScreen>
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 
 
 #ifndef NATIVE_BUILD
-		LibHomeScreen* hs = new LibHomeScreen();
+		QLibHomeScreen* qhs = new QLibHomeScreen();
 		QLibWindowmanager* qwm = new QLibWindowmanager();
 
 		// WindowManager
@@ -97,9 +97,9 @@ int main(int argc, char *argv[])
 
 		// HomeScreen
 		std::string token = secret.toStdString();
-		hs->init(port, token.c_str());
+		qhs->init(port, token.c_str());
 		// Set the event handler for Event_ShowWindow which will activate the surface for windowmanager
-		hs->set_event_handler(LibHomeScreen::Event_ShowWindow, [qwm, &graphic_role](json_object *object){
+		qhs->set_event_handler(QLibHomeScreen::Event_ShowWindow, [qwm, &graphic_role](json_object *object){
 			qDebug("Surface %s got showWindow\n", graphic_role.toStdString().c_str());
 			qwm->activateWindow(graphic_role);
 		});
@@ -121,7 +121,8 @@ int main(int argc, char *argv[])
 		window->setFlags(window->flags() & ~Qt::FramelessWindowHint); // Remove the borderless flag
 		window->setHeight(QGuiApplication::primaryScreen()->geometry().height());
 #else
-		QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateWindow()));
+		// QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateWindow()));
+		qhs->setQuickWindow(window);
 #endif
 	}
 	else
