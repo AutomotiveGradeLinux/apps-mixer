@@ -120,7 +120,8 @@ void Mixer::onClientEventReceived(QString eventName, const QJsonValue& data)
 		int value = data.toObject()["value"].toDouble() * 100;
 		value = qBound(0, value, 100);
 
-		for (AudioRole *ar : m_roles) {
+		for (QObject *o : m_roles) {
+			AudioRole *ar = static_cast<AudioRole*>(o);
 			if (ar->Name() == name) {
 				ar->BeginUpdate();
 				ar->setValue(value);
