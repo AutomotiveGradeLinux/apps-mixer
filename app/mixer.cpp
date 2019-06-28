@@ -49,7 +49,7 @@ void Mixer::setRoleVolume(AudioRole* role)
 
 	QJsonObject arg;
 	arg.insert("control", role->Name().toLocal8Bit().data());
-	arg.insert("value", QJsonValue(role->Value()));
+	arg.insert("value", QJsonValue(role->Value() / 100.0));
 
 	m_client.call("audiomixer", "volume", arg);
 }
