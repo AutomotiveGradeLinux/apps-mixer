@@ -63,7 +63,7 @@ void Mixer::parseControls(const QJsonValue & v)
 
 	for (const QJsonValue & av : v.toArray()) {
 		QString name = av.toObject()["control"].toString();
-		int value = static_cast<int>(av.toObject()["volume"].toDouble() * 100);
+		int value = av.toObject()["volume"].toDouble() * 100;
 		value = qBound(0, value, 100);
 
 		AudioRole *ar = new AudioRole(name, value);
@@ -117,7 +117,7 @@ void Mixer::onClientEventReceived(QString eventName, const QJsonValue& data)
 	}
 	else if (eventName == "audiomixer/volume_changed") {
 		QString name = data.toObject()["control"].toString();
-		int value = static_cast<int>(data.toObject()["value"].toDouble() * 100);
+		int value = data.toObject()["value"].toDouble() * 100;
 		value = qBound(0, value, 100);
 
 		for (QObject *o : m_roles) {
