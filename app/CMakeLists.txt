@@ -23,7 +23,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(OE_QMAKE_PATH_EXTERNAL_HOST_BINS $ENV{OE_QMAKE_PATH_HOST_BINS})
 
-find_package(Qt5 COMPONENTS WebSockets AGLExtras REQUIRED)
+find_package(Qt5 COMPONENTS Core Gui QuickControls2 QuickWidgets WebSockets REQUIRED)
 
 PROJECT_TARGET_ADD(mixer)
 
@@ -43,15 +43,15 @@ add_executable(mixer
 set_target_properties(mixer PROPERTIES
 	LABELS "EXECUTABLE"
 	PREFIX ""
-	COMPILE_FLAGS "${EXTRAS_CFLAGS} -DFOR_AFB_BINDING"
+	COMPILE_FLAGS " -DFOR_AFB_BINDING"
 	LINK_FLAGS "${BINDINGS_LINK_FLAG}"
-	LINK_LIBRARIES "${EXTRAS_LIBRARIES}"
 	OUTPUT_NAME "${TARGET_NAME}"
 )
 
 target_link_libraries(mixer
-	Qt5::AGLExtras
 	Qt5::WebSockets
+	Qt5::QuickWidgets
+	Qt5::QuickControls2
 	json-c
 	libafb-helpers-qt.a
 )

@@ -20,6 +20,8 @@ import QtQuick.Controls 2.0
 import AGL.Demo.Controls 1.0
 import Mixer 1.0
 
+import QtQuick.Window 2.13
+
 ApplicationWindow {
 	// ----- Signals
 
@@ -28,8 +30,8 @@ ApplicationWindow {
 
 	// ----- Setup
 	id: root
-	width: 1080 * roles.scale
-	height: 1487 * roles.scale
+	width: Screen.width * roles.scale
+	height: Screen.height * roles.scale
 
 	// ----- Childs
 	Label {
@@ -52,7 +54,8 @@ ApplicationWindow {
 	ListView {
 		id: roles
 		model: mixer.roles
-		scale: scale_factor
+		//scale: scale_factor
+		scale: 1
 
 		anchors.margins: 80
 		anchors.top: title.bottom

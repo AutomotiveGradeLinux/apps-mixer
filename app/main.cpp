@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-
+#include <QGuiApplication>
+#include <QtGui/QGuiApplication>
+#include <QtQml/QQmlContext>
 #include <QtQml/QQmlApplicationEngine>
-#include <QtAGLExtras/AGLApplication>
 #include <QtQml/qqml.h>
 
 #include "mixer.hpp"
@@ -26,12 +27,12 @@
 
 int main(int argc, char *argv[])
 {
-        AGLApplication app(argc, argv);
-        app.setApplicationName("Mixer");
-        app.setupApplicationRole("mixer");
+        QGuiApplication app(argc, argv);
+        app.setDesktopFileName("mixer");
 
+        QQmlApplicationEngine engine;
         qmlRegisterType<Mixer>("Mixer", 1, 0, "Mixer");
-        app.load(QUrl(QStringLiteral("qrc:/Mixer.qml")));
+        engine.load(QUrl(QStringLiteral("qrc:/Mixer.qml")));
         return app.exec();
 
 }
