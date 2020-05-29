@@ -30,8 +30,8 @@ ApplicationWindow {
 
 	// ----- Setup
 	id: root
-	width: Screen.width * roles.scale
-	height: Screen.height * roles.scale
+	width: Window.width * roles.scale
+	height: Window.height * roles.scale
 
 	// ----- Childs
 	Label {
