@@ -10,7 +10,6 @@
   </author>
   <license>@PROJECT_LICENSE@</license>
   <feature name="urn:AGL:widget:required-api">
-    <param name="homescreen" value="ws" />
     <param name="audiomixer" value="ws" />
   </feature>
   <feature name="urn:AGL:widget:required-permission">
